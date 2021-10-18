@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.adapter.SongAdapter
 import com.example.myapplication.data.remote.SongApi
@@ -29,11 +30,12 @@ import kotlinx.coroutines.*
 class MainActivity : AppCompatActivity() {
     private var response: TopSongResponse? = null
     private var listSong = listOf<Song>()
-    private var adapter = SongAdapter()
+    private var adapter = SongAdapter(this)
     private var musicService: MusicService? = null
     private var isBound = false
     lateinit var tvContent: TextView
     lateinit var btnPause: ImageView
+    lateinit var ivContent : ImageView
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -78,6 +80,7 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         tvContent = findViewById(R.id.tv_infor)
         btnPause = findViewById(R.id.btn_pause)
+        ivContent = findViewById(R.id.img_song)
         initControlBottomBar()
     }
 
@@ -191,12 +194,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun changeContent() {
         tvContent.text = musicService?.cursong?.title
-//        val byteArray = musicService.cursong.byteArray
-//        if (byteArray.isEmpty()) {
-//            ivSong.setImageResource(R.drawable.ic_baseline_music_note_24)
-//        } else {
-//            ivSong.setImageBitmap(BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size))
-//        }
+        val imgUrl =  musicService?.cursong?.thumbnail
+        imgUrl?.let {
+            Glide.with(this).load(it).centerInside().into(ivContent)
+        }
+
     }
 
     private fun initControlBottomBar() {

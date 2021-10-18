@@ -13,6 +13,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.responses.Song
@@ -246,6 +247,9 @@ class PlayingActivity : AppCompatActivity() {
                 tvCurDuration.text =
                     Contains.durationString(service.getMediaCurrentPos() / 1000)
                 progressBar.max = (curSong.duration)
+
+                val imgUrl = curSong.thumbnail
+                Glide.with(this).load(imgUrl).circleCrop().into(ivContent)
             }
         }
 //        val byteArray = musicService.cursong.byteArray

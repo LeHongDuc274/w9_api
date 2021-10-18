@@ -1,6 +1,7 @@
 package com.example.myapplication.service
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -12,6 +13,8 @@ import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.NotificationTarget
 import com.example.myapplication.R
 import com.example.myapplication.activities.MainActivity
 import com.example.myapplication.data.remote.responses.Song
@@ -32,7 +35,7 @@ class MusicService : Service() {
 
     private var playlist = listOf<Song>()
     private val listSongPos = listOf<Int>()
-     var cursong: Song? = null
+    var cursong: Song? = null
     private var songPos = 0
     var shuffle = false
     var repeat = false
@@ -67,7 +70,8 @@ class MusicService : Service() {
     fun setPlaylist(list: List<Song>) {
         playlist = list
     }
-    fun getPlaylist() :List<Song> = playlist
+
+    fun getPlaylist(): List<Song> = playlist
     fun setNewSong(newId: String) {
         cursong = playlist.find {
             it.id == newId
@@ -207,12 +211,10 @@ class MusicService : Service() {
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun pushNotification(song: Song) {
         val remoteView = RemoteViews(packageName, R.layout.notify_layout)
-        initRemoteView(remoteView, song)
         val pending = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT
         )
-        initControlRemoteView(remoteView, song)
         val notification =
             NotificationCompat.Builder(this, MyApp.CHANNEL_ID)
                 .setCustomContentView(remoteView)
@@ -220,6 +222,9 @@ class MusicService : Service() {
                 .setContentIntent(pending)
                 .setSound(null)
                 .build()
+
+        initRemoteView(remoteView, song, notification)
+        initControlRemoteView(remoteView, song)
         startForeground(1, notification)
     }
 
@@ -249,10 +254,14 @@ class MusicService : Service() {
         )
     }
 
-    private fun initRemoteView(remoteView: RemoteViews, song: Song) {
+    private fun initRemoteView(remoteView: RemoteViews, song: Song, notification: Notification) {
         remoteView.setTextViewText(R.id.tv_title, song.title)
         remoteView.setTextViewText(R.id.tv_singer, song.artists_names)
         // setImageNotify(remoteView)
+        val imgUrl = song.thumbnail
+        val target: NotificationTarget =
+            NotificationTarget(this, R.id.iv_notify, remoteView, notification, 1)
+        Glide.with(applicationContext).asBitmap().load(imgUrl).into(target)
         remoteView.setImageViewResource(
             R.id.btn_pause,
             if (mediaPlayer.isPlaying) R.drawable.outline_pause_circle_black_24 else R.drawable.outline_not_started_black_24
