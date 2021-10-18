@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import com.example.myapplication.data.local.SongDatabase
 
 class MyApp: Application() {
     companion object{

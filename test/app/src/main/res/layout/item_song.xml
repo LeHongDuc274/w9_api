@@ -3,11 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:paddingVertical="@dimen/margin_small"
-    android:background="@drawable/shape_item_song"
-    android:layout_marginTop="@dimen/margin_small"
+    android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
-    android:layout_height="wrap_content">
+    android:layout_marginTop="@dimen/margin_small"
+    android:background="@drawable/shape_item_song"
+    android:paddingVertical="@dimen/margin_small">
 
 
     <com.google.android.material.card.MaterialCardView
@@ -28,29 +28,48 @@
     </com.google.android.material.card.MaterialCardView>
 
     <TextView
-        android:layout_marginHorizontal="@dimen/margin_small"
         android:id="@+id/tv_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="title"
-        android:textSize="@dimen/text_size_medium"
+        android:layout_marginHorizontal="@dimen/margin_small"
+        android:ellipsize="end"
         android:fontFamily="@font/lora_italic_wght"
         android:maxLines="1"
-        android:ellipsize="end"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:text="title"
+        android:textSize="@dimen/text_size_medium"
+        app:layout_constraintEnd_toStartOf="@+id/iv_favourite"
         app:layout_constraintStart_toEndOf="@+id/card"
         app:layout_constraintTop_toTopOf="@+id/card" />
+    <ImageView
+        android:id="@+id/iv_favourite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:src="@drawable/ic_baseline_heart_broken_24"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_title"
+        app:layout_constraintEnd_toStartOf="@+id/download"
+        app:layout_constraintTop_toTopOf="@+id/tv_title" />
+
+    <ImageView
+        android:id="@+id/download"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:src="@drawable/ic_baseline_arrow_circle_down_24"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tv_title" />
 
     <TextView
         android:id="@+id/tv_singer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/margin_small"
-        android:text="Singer"
-        android:textSize="@dimen/text_size_medium"
-        android:maxLines="1"
         android:ellipsize="end"
         android:fontFamily="@font/lora_italic_wght"
+        android:maxLines="1"
+        android:text="Singer"
+        android:textSize="@dimen/text_size_medium"
         app:layout_constraintBottom_toBottomOf="@+id/card"
         app:layout_constraintEnd_toStartOf="@+id/tv_duration"
         app:layout_constraintStart_toEndOf="@+id/card" />
@@ -59,9 +78,11 @@
         android:id="@+id/tv_duration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="duration"
+        android:layout_marginEnd="16dp"
         android:fontFamily="@font/lora_italic_wght"
+        android:text="duration"
         app:layout_constraintBottom_toBottomOf="@+id/tv_singer"
-        app:layout_constraintEnd_toEndOf="@+id/tv_title"
-        app:layout_constraintTop_toTopOf="@+id/tv_singer" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tv_singer"
+        app:layout_constraintVertical_bias="0.0" />
 </androidx.constraintlayout.widget.ConstraintLayout>

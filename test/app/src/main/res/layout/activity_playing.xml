@@ -6,6 +6,28 @@
     android:layout_height="match_parent"
     tools:context=".activities.PlayingActivity">
 
+    <TextView
+        android:id="@+id/tv_recommed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Recommend"
+        android:textColor="@color/purple_200"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/add_fragment"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_marginBottom="4dp"
+        android:src="@drawable/ic_baseline_keyboard_arrow_up_24"
+        app:layout_constraintBottom_toTopOf="@+id/tv_recommed"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <ImageButton
         android:id="@+id/btn_shuffle"
         android:layout_width="35dp"
@@ -59,10 +81,11 @@
         android:id="@+id/btn_pause"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="12dp"
         android:src="@drawable/ic_baseline_pause_24"
         app:backgroundTint="#FFC107"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:elevation="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/add_fragment"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent" />
@@ -75,8 +98,7 @@
         android:layout_alignParentBottom="true"
         app:layout_constraintBottom_toBottomOf="@+id/iv_volum"
         app:layout_constraintStart_toEndOf="@+id/iv_volum"
-        app:layout_constraintTop_toTopOf="@+id/iv_volum"
-        />
+        app:layout_constraintTop_toTopOf="@+id/iv_volum" />
 
     <ImageView
         android:id="@+id/iv_volum"
@@ -138,13 +160,13 @@
         android:layout_marginHorizontal="48dp"
         android:layout_marginBottom="12dp"
         android:ellipsize="end"
+        android:fontFamily="@font/ephesis_regular"
         android:gravity="center"
         android:maxLines="1"
-        android:fontFamily="@font/ephesis_regular"
         android:text="Title"
+        android:textColor="@color/purple_500"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/purple_500"
         app:layout_constraintBottom_toTopOf="@+id/tv_singer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -157,10 +179,10 @@
         android:layout_marginHorizontal="48dp"
         android:layout_marginBottom="52dp"
         android:ellipsize="end"
+        android:fontFamily="@font/ephesis_regular"
         android:gravity="center"
         android:maxLines="1"
         android:text="Singer"
-        android:fontFamily="@font/ephesis_regular"
         android:textColor="@color/purple_200"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@+id/progress_horizontal"
@@ -169,27 +191,25 @@
         app:layout_constraintStart_toStartOf="parent" />
 
 
-
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginVertical="12dp"
         app:cardElevation="0dp"
-        app:shapeAppearanceOverlay="@style/circle"
         app:layout_constraintBottom_toTopOf="@+id/tv_title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tab_bar"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginVertical="12dp">
+        app:shapeAppearanceOverlay="@style/circle">
 
         <ImageView
             android:id="@+id/iv_content"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerInside"
-            android:src="@drawable/ic_baseline_music_note_24"
-            />
+            android:src="@drawable/ic_baseline_music_note_24" />
     </com.google.android.material.card.MaterialCardView>
 
 
@@ -222,5 +242,15 @@
             android:textColor="@color/white"
             android:textSize="28sp" />
     </LinearLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/card" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

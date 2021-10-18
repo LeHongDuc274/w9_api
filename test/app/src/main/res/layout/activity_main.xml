@@ -116,10 +116,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="fetching"
-        android:textSize="48sp"
+        android:textSize="24sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/progress_circular"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        app:layout_constraintBottom_toTopOf="@+id/fetch"
+        app:layout_constraintEnd_toEndOf="@+id/fetch"
+        app:layout_constraintStart_toStartOf="@+id/fetch" />
 </androidx.constraintlayout.widget.ConstraintLayout>

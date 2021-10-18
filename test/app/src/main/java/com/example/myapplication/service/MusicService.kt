@@ -84,7 +84,18 @@ class MusicService : Service() {
             nextSong()
         }
     }
-
+    fun playRecommend(song : Song){
+        cursong = song
+        mediaPlayer.stop()
+        val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
+        mediaPlayer = MediaPlayer.create(applicationContext, uri)
+        mediaPlayer.start()
+        sendToActivity(ACTION_CHANGE_SONG)
+        pushNotification(song)
+        mediaPlayer.setOnCompletionListener {
+            nextSong()
+        }
+    }
     fun playSong() {
         mediaPlayer.start()
     }
@@ -157,8 +168,6 @@ class MusicService : Service() {
             mediaPlayer.start()
             sendToActivity(ACTION_PLAY)
         }
-        //   pushNotification(cursong)
-
     }
 
     private fun sendToActivity(action: Int) {

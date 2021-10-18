@@ -5,17 +5,20 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
-import android.widget.ImageView
-import android.widget.RelativeLayout
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
+import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.adapter.SongAdapter
+import com.example.myapplication.data.local.SongDatabase
+import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.responses.TopSongResponse
@@ -35,7 +38,8 @@ class MainActivity : AppCompatActivity() {
     private var isBound = false
     lateinit var tvContent: TextView
     lateinit var btnPause: ImageView
-    lateinit var ivContent : ImageView
+    lateinit var ivContent: ImageView
+    var listSongFavourite = listOf<SongFavourite>()
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -70,6 +74,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        supportActionBar?.hide()
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
         initViews()
         val songApi = SongApi.create()
         initRv()
@@ -131,7 +138,7 @@ class MainActivity : AppCompatActivity() {
             LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
         adapter.setItemClick { song ->
             val id = song.id
-           // Toast.makeText(this,song.favorit.toString(),Toast.LENGTH_LONG).show()
+            // Toast.makeText(this,song.favorit.toString(),Toast.LENGTH_LONG).show()
             musicService?.setNewSong(id)
             musicService?.playSong()
             val intentService = Intent(this, MusicService::class.java)
@@ -141,11 +148,33 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, PlayingActivity::class.java)
             startActivity(intent)
         }
+
+        adapter.setFavouriteClick { song ->
+            addFavorite(song)
+        }
+        adapter.setDownloadClick { song ->
+            downloadSong(song)
+        }
+    }
+
+    private fun downloadSong(song: Song) {
+        Unit
+    }
+
+    private fun addFavorite(song: Song) {
+        val db = SongDatabase.getInstance(applicationContext)
+        val songFavourite =
+            SongFavourite(song.artists_names, song.duration, song.id, song.thumbnail, song.title)
+        CoroutineScope(Dispatchers.IO).launch {
+            db.getDao().insert(songFavourite)
+        }
     }
 
     private fun getTopSong(songApi: SongApi) {
         val fetch = findViewById<TextView>(R.id.fetch)
+        val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
         fetch.visibility = View.VISIBLE
+        progressBar.visibility = View.VISIBLE
         fetch.text = "fetching"
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -156,17 +185,14 @@ class MainActivity : AppCompatActivity() {
                             listSong = it.data.song
                             adapter.setData(listSong)
                             fetch.visibility = View.GONE
+                            progressBar.visibility = View.GONE
                             if (!listSong.isEmpty()) {
                                 musicService?.let {
                                     it.setPlaylist(listSong)
-                                    if(it.cursong==null){
+                                    if (it.cursong == null) {
                                         it.setNewSong(listSong[0].id)
                                     }
-
                                 }
-
-
-
                                 changeContent()
                                 changePausePlayBtn()
                             }
@@ -175,13 +201,15 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: TimeoutCancellationException) {
                 withContext(Dispatchers.Main) {
-                    fetch.text = "timeout - retry"
+                    progressBar.visibility = View.GONE
+                    fetch.text = "Retry"
                     fetch.setOnClickListener {
                         getTopSong(songApi)
                     }
                 }
             }
         }
+        getFavouriteSong()
     }
 
     private fun changeTogglePausePlayUi(value: Int) {
@@ -194,7 +222,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun changeContent() {
         tvContent.text = musicService?.cursong?.title
-        val imgUrl =  musicService?.cursong?.thumbnail
+        val imgUrl = musicService?.cursong?.thumbnail
         imgUrl?.let {
             Glide.with(this).load(it).centerInside().into(ivContent)
         }
@@ -217,5 +245,46 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
+    }
+
+    private fun getFavouriteSong() {
+        val db = SongDatabase.getInstance(applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            listSongFavourite = db.getDao().getAllSong()
+            withContext(Dispatchers.Main) {
+                adapter.setListFavourite(listSongFavourite)
+            }
+        }
+    }
+
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu, menu)
+        return super.onCreateOptionsMenu(menu)
+
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.online -> adapter.setData(listSong)
+            R.id.favourite -> {
+                val newList: List<Song> = listSongFavourite.map {
+                    Song(
+                        artists_names = it.artists_names,
+                        duration = it.duration,
+                        title = it.title,
+                        id = it.id,
+                        thumbnail = it.thumbnail
+                    )
+                }
+                adapter.setData(newList)
+            }
+            R.id.local_song -> {
+//                val newList = adapterSong.sortbyDuration()
+//                musicService.setPlayList(newList)
+                Toast.makeText(this, "go2", Toast.LENGTH_LONG).show()
+            }
+        }
+        return super.onOptionsItemSelected(item)
     }
 }

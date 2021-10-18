@@ -11,12 +11,15 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatDialogFragment
 import androidx.core.view.isVisible
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.data.remote.SongApi
+import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CANCEL
@@ -24,6 +27,10 @@ import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.ACTION_PAUSE
 import com.example.myapplication.utils.Contains.ACTION_PLAY
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlayingActivity : AppCompatActivity() {
     private var musicService: MusicService? = null
@@ -42,6 +49,8 @@ class PlayingActivity : AppCompatActivity() {
     lateinit var ivContent: ImageView
     lateinit var btnPause: FloatingActionButton
     lateinit var ivVolum: ImageView
+    lateinit var ivAddFragment: ImageView
+
     private var curSong: Song? = null
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -144,6 +153,7 @@ class PlayingActivity : AppCompatActivity() {
         tvProgressChange.isVisible = false
         ivContent = findViewById(R.id.iv_content)
         ivVolum = findViewById(R.id.iv_volum)
+        ivAddFragment = findViewById(R.id.add_fragment)
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         volumBar.max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
@@ -181,6 +191,14 @@ class PlayingActivity : AppCompatActivity() {
         btnShuffle.setOnClickListener {
             musicService?.setShuffle()
             changeShuffleState()
+        }
+        ivAddFragment.setOnClickListener {
+            musicService?.let {
+                val transaction = supportFragmentManager.beginTransaction()
+                transaction.add(R.id.fragment_container,RecommendFragment(it,this))
+                transaction.addToBackStack(null)
+                transaction.commit()
+            }
         }
     }
 
