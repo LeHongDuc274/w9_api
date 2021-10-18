@@ -268,17 +268,25 @@ class MainActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.online -> adapter.setData(listSong)
             R.id.favourite -> {
-                val newList: List<Song> = listSongFavourite.map {
-                    Song(
-                        artists_names = it.artists_names,
-                        duration = it.duration,
-                        title = it.title,
-                        id = it.id,
-                        thumbnail = it.thumbnail
-                    )
+                val db = SongDatabase.getInstance(applicationContext)
+                CoroutineScope(Dispatchers.IO).launch {
+                    listSongFavourite = db.getDao().getAllSong()
+                    withContext(Dispatchers.Main) {
+                        adapter.setListFavourite(listSongFavourite)
+                        val newList: List<Song> = listSongFavourite.map {
+                            Song(
+                                artists_names = it.artists_names,
+                                duration = it.duration,
+                                title = it.title,
+                                id = it.id,
+                                thumbnail = it.thumbnail
+                            )
+                        }
+                        adapter.setData(newList)
+                    }
                 }
-                adapter.setData(newList)
-            }
+                }
+
             R.id.local_song -> {
 //                val newList = adapterSong.sortbyDuration()
 //                musicService.setPlayList(newList)
