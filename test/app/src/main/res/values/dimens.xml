@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="margin_small">12dp</dimen>
+    <dimen name="height_notify">56dp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="dp48">48dp</dimen>
+</resources>

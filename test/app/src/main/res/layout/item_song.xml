@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:paddingVertical="@dimen/margin_small"
+    android:background="@drawable/shape_item_song"
+    android:layout_marginTop="@dimen/margin_small"
+    android:layout_marginHorizontal="12dp"
+    android:layout_height="wrap_content">
+
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        android:layout_width="@dimen/height_notify"
+        android:layout_height="@dimen/height_notify"
+        android:layout_marginStart="@dimen/margin_small"
+        app:cardCornerRadius="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/img_song"
+            android:layout_width="@dimen/height_notify"
+            android:layout_height="@dimen/height_notify"
+            android:src="@drawable/ic_baseline_music_note_24" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:layout_marginHorizontal="@dimen/margin_small"
+        android:id="@+id/tv_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="title"
+        android:textSize="@dimen/text_size_medium"
+        android:fontFamily="@font/lora_italic_wght"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/card"
+        app:layout_constraintTop_toTopOf="@+id/card" />
+
+    <TextView
+        android:id="@+id/tv_singer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/margin_small"
+        android:text="Singer"
+        android:textSize="@dimen/text_size_medium"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="@font/lora_italic_wght"
+        app:layout_constraintBottom_toBottomOf="@+id/card"
+        app:layout_constraintEnd_toStartOf="@+id/tv_duration"
+        app:layout_constraintStart_toEndOf="@+id/card" />
+
+    <TextView
+        android:id="@+id/tv_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="duration"
+        android:fontFamily="@font/lora_italic_wght"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_singer"
+        app:layout_constraintEnd_toEndOf="@+id/tv_title"
+        app:layout_constraintTop_toTopOf="@+id/tv_singer" />
+</androidx.constraintlayout.widget.ConstraintLayout>
