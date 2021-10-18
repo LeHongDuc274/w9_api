@@ -24,5 +24,6 @@ data class Song(
     val thumbnail: String,
     val title: String,
     val total: Int,
-    val type: String
+    val type: String,
+    var favorit: Boolean = false
 )

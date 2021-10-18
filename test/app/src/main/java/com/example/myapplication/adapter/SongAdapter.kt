@@ -1,16 +1,18 @@
 package com.example.myapplication.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.utils.Contains.durationString
 
 class SongAdapter : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
-    private var itemClick: ((String) ->Unit)? = null
+    private var itemClick: ((Song) ->Unit)? = null
 
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
 
@@ -31,7 +33,7 @@ class SongAdapter : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
         tvSinger.text = listSongs[position].artists_names
         tvDuration.text = durationString(listSongs[position].duration)
         holder.itemView.setOnClickListener {
-            itemClick?.invoke(listSongs[position].id)
+            itemClick?.invoke(listSongs[position])
         }
     }
 
@@ -44,7 +46,7 @@ class SongAdapter : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
         notifyDataSetChanged()
     }
 
-    fun setItemClick(action: (String) -> Unit) {
+    fun setItemClick(action: (Song) -> Unit) {
             itemClick = action
     }
 }
