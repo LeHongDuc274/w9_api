@@ -7,17 +7,13 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatDialogFragment
+import android.view.View
+import android.widget.*
+
 import androidx.core.view.isVisible
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
-import com.example.myapplication.data.remote.SongApi
-import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.service.MusicService
@@ -50,7 +46,7 @@ class PlayingActivity : AppCompatActivity() {
     lateinit var btnPause: FloatingActionButton
     lateinit var ivVolum: ImageView
     lateinit var ivAddFragment: ImageView
-
+    lateinit var tvRecommend: TextView
     private var curSong: Song? = null
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -63,7 +59,6 @@ class PlayingActivity : AppCompatActivity() {
                     val value = it.getIntExtra("fromNotifyToActivity", 0)
                     when (value) {
                         ACTION_CHANGE_SONG -> {
-                            Log.e("change", "change")
                             updateUiWhenChangeSong()
                             changeTogglePausePlayUi(ACTION_PLAY)
                         }
@@ -73,7 +68,7 @@ class PlayingActivity : AppCompatActivity() {
                         (ACTION_PLAY) -> {
                             changeTogglePausePlayUi(value)
                         }
-                        ACTION_CANCEL ->changeTogglePausePlayUi(ACTION_PAUSE)
+                        ACTION_CANCEL -> changeTogglePausePlayUi(ACTION_PAUSE)
 
                     }
                 }
@@ -154,6 +149,7 @@ class PlayingActivity : AppCompatActivity() {
         ivContent = findViewById(R.id.iv_content)
         ivVolum = findViewById(R.id.iv_volum)
         ivAddFragment = findViewById(R.id.add_fragment)
+        tvRecommend = findViewById(R.id.tv_recommed)
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         volumBar.max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
@@ -195,7 +191,7 @@ class PlayingActivity : AppCompatActivity() {
         ivAddFragment.setOnClickListener {
             musicService?.let {
                 val transaction = supportFragmentManager.beginTransaction()
-                transaction.add(R.id.fragment_container,RecommendFragment(it,this))
+                transaction.add(R.id.fragment_container, RecommendFragment(it, this))
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -258,24 +254,33 @@ class PlayingActivity : AppCompatActivity() {
         musicService?.let { service ->
             curSong = service.cursong
             curSong?.let { curSong ->
-                Log.e("cur", curSong.toString())
+                //content change
                 tvTitle.text = curSong.title
                 tvSinger.text = curSong.artists_names
                 tvDuration.text = Contains.durationString(curSong.duration)
                 tvCurDuration.text =
                     Contains.durationString(service.getMediaCurrentPos() / 1000)
                 progressBar.max = (curSong.duration)
+                //image change
+                if(curSong.thumbnail!=null) {
+                    var imgUrl : String? = null
+                    imgUrl = curSong.thumbnail
+                    Glide.with(applicationContext).load(imgUrl).centerInside().into(ivContent)
+                } else if(curSong.image.isNotEmpty()){
+                    ivContent.setImageBitmap(
+                        BitmapFactory.decodeByteArray(curSong.image, 0, curSong.image.size)
+                    )
+                } else ivContent.setImageResource(R.drawable.ic_baseline_music_note_24)
 
-                val imgUrl = curSong.thumbnail
-                Glide.with(this).load(imgUrl).circleCrop().into(ivContent)
+//                if (service.isPlayOnline) {
+//                    ivAddFragment.visibility = View.VISIBLE
+//                    tvRecommend.visibility = View.VISIBLE
+//
+//                } else {
+////                    ivAddFragment.visibility = View.GONE
+////                    tvRecommend.visibility = View.GONE
+//                    }
+                }
             }
         }
-//        val byteArray = musicService.cursong.byteArray
-//        if (byteArray.isEmpty()) {
-//            ivContent.setImageResource(R.drawable.ic_baseline_music_note_24)
-//        } else {
-//            ivContent.setImageBitmap(BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size))
-//        }
-        // togglePausePlay
     }
-}

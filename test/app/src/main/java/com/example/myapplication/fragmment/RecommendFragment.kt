@@ -17,6 +17,7 @@ import com.example.myapplication.adapter.SongAdapter
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.service.MusicService
+import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import kotlinx.coroutines.*
 
 class RecommendFragment(val musicService: MusicService,context:Context) : Fragment() {
@@ -25,7 +26,7 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
     lateinit var close : ImageView
     lateinit var tvState: TextView
     lateinit var progressBar : ProgressBar
-    private var adapter = SongAdapter(context)
+    private var adapter = SongAdapter(context,TYPE_RECOMMEND)
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?

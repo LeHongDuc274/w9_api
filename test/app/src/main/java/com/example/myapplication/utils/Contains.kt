@@ -7,6 +7,10 @@ object Contains {
     const val ACTION_PREV = 4
     const val ACTION_NEXT = 5
     const val ACTION_CANCEL = 6
+    const val TYPE_ONLINE = 3
+    const val TYPE_FOVOURITE = 4
+    const val TYPE_OFLINE = 5
+    const val TYPE_RECOMMEND = 6
     const val FROM_NOTIFY = "fromNotify"
     fun durationString(duration: Int): String {
         val minute = duration / 60

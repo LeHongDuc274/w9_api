@@ -4,11 +4,14 @@ import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ContentUris
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
@@ -34,9 +37,11 @@ class MusicService : Service() {
     private var mediaPlayer = MediaPlayer()
 
     private var playlist = listOf<Song>()
-    private val listSongPos = listOf<Int>()
+    private var playlistOffline = listOf<Song>()
+    var isPlayOnline = true
     var cursong: Song? = null
     private var songPos = 0
+    private var songPosOff = 0
     var shuffle = false
     var repeat = false
 
@@ -55,7 +60,6 @@ class MusicService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         pushNotification(cursong!!)
         val actionFromNotify = intent?.getIntExtra("fromNotify", -1)
         actionFromNotify?.let { handlerActionFromNotify(actionFromNotify) }
@@ -69,22 +73,46 @@ class MusicService : Service() {
     fun isPlaying() = mediaPlayer.isPlaying
     fun setPlaylist(list: List<Song>) {
         playlist = list
+        isPlayOnline = true
+    }
+
+    fun setPlaylistOffline(list: List<Song>) {
+        playlistOffline = list
+        isPlayOnline = false
     }
 
     fun getPlaylist(): List<Song> = playlist
+    fun getPlaylistOffline(): List<Song> = playlistOffline
     fun setNewSong(newId: String) {
-        cursong = playlist.find {
-            it.id == newId
-        } ?: cursong
-        songPos = playlist.indexOf(cursong)
-        mediaPlayer.stop()
-        val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
-        mediaPlayer = MediaPlayer.create(applicationContext, uri)
-        mediaPlayer.setOnCompletionListener {
-            nextSong()
+        if (isPlayOnline) {
+            cursong = playlist.find {
+                it.id == newId
+            } ?: cursong
+            songPos = playlist.indexOf(cursong)
+            mediaPlayer.stop()
+            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
+            mediaPlayer = MediaPlayer.create(applicationContext, uri)
+            mediaPlayer.setOnCompletionListener {
+                nextSong()
+            }
+        } else {
+            cursong = playlistOffline.find {
+                it.id == newId
+            } ?: cursong
+            songPosOff = playlistOffline.indexOf(cursong)
+            mediaPlayer.stop()
+            val uri = ContentUris.withAppendedId(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                cursong!!.id.toLong()
+            )
+            mediaPlayer = MediaPlayer.create(applicationContext, uri)
+            mediaPlayer.setOnCompletionListener {
+                nextSong()
+            }
         }
     }
-    fun playRecommend(song : Song){
+
+    fun playRecommend(song: Song) {
         cursong = song
         mediaPlayer.stop()
         val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
@@ -96,6 +124,7 @@ class MusicService : Service() {
             nextSong()
         }
     }
+
     fun playSong() {
         mediaPlayer.start()
     }
@@ -117,39 +146,79 @@ class MusicService : Service() {
     }
 
     fun nextSong() {
-        if (!repeat && !shuffle) { // repeat disable _>next
-            if (songPos < playlist.size - 1) {
-                songPos++
-                val newId = playlist[songPos].id
-                setNewSong(newId)
-                Log.e("posSong", songPos.toString())
-                playSong()
+        when (isPlayOnline) {
+            true -> {
+                if (!repeat && !shuffle) { // repeat disable _>next
+                    if (songPos < playlist.size - 1) {
+                        songPos++
+                        val newId = playlist[songPos].id
+                        setNewSong(newId)
+                        playSong()
+                    }
+                } else if (!repeat && shuffle) { // next random
+                    val random = Random.nextInt(songPos, playlist.size)
+                    setNewSong(playlist[random].id)
+                    playSong()
+                } else { // repeat enable -> seek to start
+                    mediaPlayer.seekTo(0)
+                    mediaPlayer.isLooping = true
+                    playSong()
+                }
+                pushNotification(cursong!!)
+                sendToActivity(ACTION_CHANGE_SONG)
             }
-        } else if (!repeat && shuffle) { // next random
-            val random = Random.nextInt(songPos, playlist.size)
-            setNewSong(playlist[random].id)
-            playSong()
-        } else { // repeat enable -> seek to start
-            mediaPlayer.seekTo(0)
-            mediaPlayer.isLooping = true
-            playSong()
+            else -> {
+                if (!repeat && !shuffle) { // repeat disable _>next
+                    if (songPosOff < playlistOffline.size - 1) {
+                        songPosOff++
+                        val newId = playlistOffline[songPosOff].id
+                        setNewSong(newId)
+                        playSong()
+                    }
+                } else if (!repeat && shuffle) { // next random
+                    val random = Random.nextInt(songPosOff, playlistOffline.size)
+                    setNewSong(playlistOffline[random].id)
+                    playSong()
+                } else { // repeat enable -> seek to start
+                    mediaPlayer.seekTo(0)
+                    mediaPlayer.isLooping = true
+                    playSong()
+                }
+                pushNotification(cursong!!)
+                sendToActivity(ACTION_CHANGE_SONG)
+            }
         }
-        pushNotification(cursong!!)
-        sendToActivity(ACTION_CHANGE_SONG)
     }
 
     fun prevSong() {
-        if (mediaPlayer.currentPosition > 20000) {
-            mediaPlayer.seekTo(0)
-            return
-        } else if (songPos > 0) {
-            songPos--
-            val newId = playlist[songPos].id
-            setNewSong(newId)
-            playSong()
+        when (isPlayOnline) {
+            true -> {
+                if (mediaPlayer.currentPosition > 20000) {
+                    mediaPlayer.seekTo(0)
+                    return
+                } else if (songPos > 0) {
+                    songPos--
+                    val newId = playlist[songPos].id
+                    setNewSong(newId)
+                    playSong()
+                }
+                sendToActivity(ACTION_CHANGE_SONG)
+                pushNotification(cursong!!)
+            }
+            false -> {
+                if (mediaPlayer.currentPosition > 20000) {
+                    mediaPlayer.seekTo(0)
+                    return
+                } else if (songPosOff > 0) {
+                    songPosOff--
+                    val newId = playlistOffline[songPosOff].id
+                    setNewSong(newId)
+                    playSong()
+                }
+                sendToActivity(ACTION_CHANGE_SONG)
+                pushNotification(cursong!!)
+            }
         }
-        sendToActivity(ACTION_CHANGE_SONG)
-        pushNotification(cursong!!)
     }
 
     fun getCurSong() = cursong
@@ -263,17 +332,36 @@ class MusicService : Service() {
         )
     }
 
-    private fun initRemoteView(remoteView: RemoteViews, song: Song, notification: Notification) {
+    private fun initRemoteView(
+        remoteView: RemoteViews,
+        song: Song,
+        notification: Notification
+    ) {
         remoteView.setTextViewText(R.id.tv_title, song.title)
         remoteView.setTextViewText(R.id.tv_singer, song.artists_names)
         // setImageNotify(remoteView)
-        val imgUrl = song.thumbnail
-        val target: NotificationTarget =
-            NotificationTarget(this, R.id.iv_notify, remoteView, notification, 1)
-        Glide.with(applicationContext).asBitmap().load(imgUrl).into(target)
+        if(song.thumbnail!=null) {
+            val imgUrl = song.thumbnail
+            val target: NotificationTarget =
+                NotificationTarget(this, R.id.iv_notify, remoteView, notification, 1)
+            Glide.with(applicationContext).asBitmap().load(imgUrl).into(target)
+        } else {
+            setImageNotify(remoteView)
+        }
+        //set btnPause
         remoteView.setImageViewResource(
             R.id.btn_pause,
             if (mediaPlayer.isPlaying) R.drawable.outline_pause_circle_black_24 else R.drawable.outline_not_started_black_24
         )
+    }
+
+    private fun setImageNotify(remoteView: RemoteViews) {
+        val byteArray = cursong?.image
+        if (byteArray!!.isNotEmpty()) {
+            remoteView.setImageViewBitmap(
+                R.id.iv_notify,
+                BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+            )
+        } else remoteView.setImageViewResource(R.id.iv_notify, R.drawable.ic_baseline_music_note_24)
     }
 }

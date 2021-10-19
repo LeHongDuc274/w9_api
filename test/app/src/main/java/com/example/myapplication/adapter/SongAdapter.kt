@@ -1,6 +1,8 @@
 package com.example.myapplication.adapter
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -14,9 +16,11 @@ import com.example.myapplication.R
 import com.example.myapplication.activities.MainActivity
 import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.utils.Contains.TYPE_OFLINE
+import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.example.myapplication.utils.Contains.durationString
 
-class SongAdapter(val context: Context) : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
+class SongAdapter(val context: Context,val type:Int) : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
     private var itemClick: ((Song) -> Unit)? = null
     private var favouriteClick: ((Song) -> Unit)? = null
     private var downloadClick: ((Song) -> Unit)? = null
@@ -38,12 +42,28 @@ class SongAdapter(val context: Context) : RecyclerView.Adapter<SongAdapter.ViewH
         val tvDuration = holder.itemView.findViewById<TextView>(R.id.tv_duration)
         val ivFavourite = holder.itemView.findViewById<ImageView>(R.id.iv_favourite)
         val ivDownLoad = holder.itemView.findViewById<ImageView>(R.id.download)
+        val iv = holder.itemView.findViewById<ImageView>(R.id.img_song)
+
+        if(listSongs[position].thumbnail!=null) {
+            var imgUrl : String? = null
+            imgUrl = listSongs[position].thumbnail
+            Glide.with(context).load(imgUrl).centerInside().into(iv)
+        } else if(listSongs[position].image.isNotEmpty()){
+           iv.setImageBitmap(
+               BitmapFactory.decodeByteArray(listSongs[position].image, 0, listSongs[position].image!!.size)
+           )
+        } else iv.setImageResource(R.drawable.ic_baseline_music_note_24)
+
+        if(type == TYPE_RECOMMEND || type == TYPE_OFLINE){
+            ivFavourite.visibility = View.GONE
+            ivDownLoad.visibility = View.GONE
+        }
+
         tvTitle.text = listSongs[position].title
         tvSinger.text = listSongs[position].artists_names
         tvDuration.text = durationString(listSongs[position].duration)
-        val iv = holder.itemView.findViewById<ImageView>(R.id.img_song)
-        val imgUrl = listSongs[position].thumbnail
-        Glide.with(context).load(imgUrl).centerInside().into(iv)
+
+
         if(holder.itemViewType==2){
             ivFavourite.setImageResource(R.drawable.ic_heart_checked)
         } else ivFavourite.setImageResource(R.drawable.ic_baseline_heart_broken_24)

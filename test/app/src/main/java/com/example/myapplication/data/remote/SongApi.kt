@@ -18,7 +18,7 @@ interface SongApi {
     ) : RecommendResponses
 
     companion object {
-        private const val BASE_URL ="https://mp3.zing.vn"
+        const val BASE_URL ="https://mp3.zing.vn"
         fun create(): SongApi {
             return Retrofit.Builder()
                 .baseUrl(BASE_URL)
