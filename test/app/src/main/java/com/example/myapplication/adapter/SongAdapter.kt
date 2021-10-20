@@ -20,15 +20,16 @@ import com.example.myapplication.utils.Contains.TYPE_OFLINE
 import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.example.myapplication.utils.Contains.durationString
 
-class SongAdapter(val context: Context,val type:Int) : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
+class SongAdapter(val context: Context, val type: Int) :
+    RecyclerView.Adapter<SongAdapter.ViewHolder>() {
     private var itemClick: ((Song) -> Unit)? = null
     private var favouriteClick: ((Song) -> Unit)? = null
     private var downloadClick: ((Song) -> Unit)? = null
     private var listSongs = listOf<Song>()
     private var listFavourite = listOf<SongFavourite>()
+
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
     }
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
@@ -44,17 +45,21 @@ class SongAdapter(val context: Context,val type:Int) : RecyclerView.Adapter<Song
         val ivDownLoad = holder.itemView.findViewById<ImageView>(R.id.download)
         val iv = holder.itemView.findViewById<ImageView>(R.id.img_song)
 
-        if(listSongs[position].thumbnail!=null) {
-            var imgUrl : String? = null
+        if (listSongs[position].thumbnail != null) {
+            var imgUrl: String? = null
             imgUrl = listSongs[position].thumbnail
             Glide.with(context).load(imgUrl).centerInside().into(iv)
-        } else if(listSongs[position].image.isNotEmpty()){
-           iv.setImageBitmap(
-               BitmapFactory.decodeByteArray(listSongs[position].image, 0, listSongs[position].image!!.size)
-           )
+        } else if (listSongs[position].image.isNotEmpty()) {
+            iv.setImageBitmap(
+                BitmapFactory.decodeByteArray(
+                    listSongs[position].image,
+                    0,
+                    listSongs[position].image!!.size
+                )
+            )
         } else iv.setImageResource(R.drawable.ic_baseline_music_note_24)
 
-        if(type == TYPE_RECOMMEND || type == TYPE_OFLINE){
+        if (type == TYPE_RECOMMEND || type == TYPE_OFLINE) {
             ivFavourite.visibility = View.GONE
             ivDownLoad.visibility = View.GONE
         }
@@ -63,50 +68,44 @@ class SongAdapter(val context: Context,val type:Int) : RecyclerView.Adapter<Song
         tvSinger.text = listSongs[position].artists_names
         tvDuration.text = durationString(listSongs[position].duration)
 
+        if (holder.itemViewType == 2) ivFavourite.setImageResource(R.drawable.ic_heart_checked)
+        else ivFavourite.setImageResource(R.drawable.ic_baseline_heart_broken_24)
 
-        if(holder.itemViewType==2){
-            ivFavourite.setImageResource(R.drawable.ic_heart_checked)
-        } else ivFavourite.setImageResource(R.drawable.ic_baseline_heart_broken_24)
-
-        holder.itemView.setOnClickListener {
-            itemClick?.invoke(listSongs[position])
-        }
+        holder.itemView.setOnClickListener { itemClick?.invoke(listSongs[position]) }
         ivFavourite.setOnClickListener {
             ivFavourite.setImageResource(R.drawable.ic_heart_checked)
             favouriteClick?.invoke(listSongs[position])
         }
-        ivDownLoad.setOnClickListener {
-            downloadClick?.invoke(listSongs[position])
-        }
+        ivDownLoad.setOnClickListener { downloadClick?.invoke(listSongs[position]) }
     }
 
-    override fun getItemCount(): Int {
-        return listSongs.size
-    }
+    override fun getItemCount(): Int =listSongs.size
 
     override fun getItemViewType(position: Int): Int {
-       val contains =  listFavourite.find {
-            it.id.equals(listSongs[position].id)
-        }
-        if(contains!=null){
-            return 2 // favourite
-        } else return 1 // not favourite
+        val contains = listFavourite.find { it.id.equals(listSongs[position].id) }
+        if (contains != null) return 2 // favourite
+         else return 1 // not favourite
     }
+
     fun setData(list: List<Song>) {
         listSongs = list
         notifyDataSetChanged()
     }
-    fun setListFavourite(list: List<SongFavourite>){
+
+    fun setListFavourite(list: List<SongFavourite>) {
         listFavourite = list
         notifyDataSetChanged()
     }
+
     fun setItemClick(action: (Song) -> Unit) {
         itemClick = action
     }
-    fun setFavouriteClick(action: (Song) -> Unit){
+
+    fun setFavouriteClick(action: (Song) -> Unit) {
         favouriteClick = action
     }
-    fun setDownloadClick(action: (Song) -> Unit){
+
+    fun setDownloadClick(action: (Song) -> Unit) {
         downloadClick = action
     }
 }

@@ -33,14 +33,17 @@ import com.example.myapplication.utils.Contains.ACTION_PLAY
 import com.example.myapplication.utils.Contains.TYPE_ONLINE
 import kotlinx.coroutines.*
 import androidx.core.app.ActivityCompat
-
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
-
 import android.os.Build
 import android.provider.MediaStore
-import com.example.myapplication.utils.Contains.TYPE_OFLINE
+import com.example.myapplication.data.remote.search.SearchResponse
+import com.example.myapplication.data.remote.search.Song2
+import com.example.myapplication.utils.Contains.BASE_IMG_URL
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.util.concurrent.TimeUnit
 
 
@@ -53,8 +56,10 @@ class MainActivity : AppCompatActivity() {
     lateinit var tvContent: TextView
     lateinit var btnPause: ImageView
     lateinit var ivContent: ImageView
+    lateinit var searchView: androidx.appcompat.widget.SearchView
     var listSongFavourite = listOf<SongFavourite>()
     var listSongLocal = mutableListOf<Song>()
+    var listSongSearch = listOf<Song2>()
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -81,7 +86,6 @@ class MainActivity : AppCompatActivity() {
             filter
         )
     }
-
     private fun unregisterReceiver() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
     }
@@ -92,18 +96,71 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        initViews()
         val songApi = SongApi.create()
+        val searchApi = SongApi.createSearch()
+        initViews(searchApi)
         initRv()
         bindService()
         getTopSong(songApi)
     }
 
-    private fun initViews() {
+    private fun initViews(searchApi: SongApi) {
         tvContent = findViewById(R.id.tv_infor)
         btnPause = findViewById(R.id.btn_pause)
         ivContent = findViewById(R.id.img_song)
+        searchView = findViewById(R.id.search_view)
         initControlBottomBar()
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener,
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                p0?.let {
+                    getSearchResult(it, searchApi)
+                }
+                return false
+            }
+            override fun onQueryTextChange(p0: String?): Boolean {
+                return true
+            }
+        })
+        searchView.setOnCloseListener {
+            adapter.setData(listSong)
+            musicService?.setPlaylist(listSong)
+            false
+        }
+    }
+
+    private fun getSearchResult(text: String, searchApi: SongApi) {
+        val search = text.trim()
+        searchApi.search("artist,song", 20, search).enqueue(object : Callback<SearchResponse> {
+            override fun onResponse(
+                call: Call<SearchResponse>,
+                response: Response<SearchResponse>
+            ) {
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    Log.e("err", body.toString())
+//                    "https://photo-resize-zmp3.zadn.vn/w94_r1x1_jpeg" +
+//                            "/cover/4/9/d/a/49da6a1d6cf13a42e77bc3a945d9dd6b.jpg?fs=MTYzNDY4MzgyOTUwM3x3ZWJWNHw"
+                    body?.let {
+                        listSongSearch = it.data[0].song
+                        val tempList: List<Song> = listSongSearch.map {
+                            Song(
+                                artists_names = it.artist,
+                                title = it.name,
+                                duration = it.duration.toInt(),
+                                thumbnail = BASE_IMG_URL + it.thumb,
+                                id = it.id
+                            )
+                        }
+                        adapter.setData(tempList)
+                        musicService?.setPlaylist(tempList)
+                    }
+                }
+            }
+            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "Error" + t.message, Toast.LENGTH_LONG).show()
+            }
+        })
     }
 
     override fun onStart() {
@@ -127,10 +184,6 @@ class MainActivity : AppCompatActivity() {
             val binder = p1 as MusicService.Mybind
             musicService = binder.getInstance()
             isBound = true
-//            if (!listSong.isEmpty() && isBound) {
-//                musicService?.setPlaylist(listSong)
-//                changeContent()
-//            }
         }
 
         override fun onServiceDisconnected(p0: ComponentName?) {
@@ -153,7 +206,6 @@ class MainActivity : AppCompatActivity() {
             LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
         adapter.setItemClick { song ->
             val id = song.id
-            // Toast.makeText(this,song.favorit.toString(),Toast.LENGTH_LONG).show()
             musicService?.setNewSong(id)
             musicService?.playSong()
             val intentService = Intent(this, MusicService::class.java)
@@ -163,13 +215,8 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, PlayingActivity::class.java)
             startActivity(intent)
         }
-
-        adapter.setFavouriteClick { song ->
-            addFavorite(song)
-        }
-        adapter.setDownloadClick { song ->
-            downloadSong(song)
-        }
+        adapter.setFavouriteClick { song -> addFavorite(song) }
+        adapter.setDownloadClick { song -> downloadSong(song) }
     }
 
     fun isStoragePermissionGranted(): Boolean {
@@ -206,15 +253,7 @@ class MainActivity : AppCompatActivity() {
                 (Environment.DIRECTORY_DOWNLOADS),
                 fileName + ".mp3"
             )
-//            request.setDestinationUri(
-//                Uri.fromFile(
-//                    File(
-//                        applicationContext.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
-//                        fileName + ".mp3"
-//                    )
-//                )
-//            )
-            val reference = downloadManager.enqueue(request)
+            val downloadId = downloadManager.enqueue(request)
         }
     }
 
@@ -223,8 +262,11 @@ class MainActivity : AppCompatActivity() {
         val songFavourite =
             song.thumbnail?.let {
                 SongFavourite(
-                    song.artists_names, song.duration, song.id,
-                    it, song.title
+                    song.artists_names,
+                    song.duration,
+                    song.id,
+                    it,
+                    song.title
                 )
             }
         CoroutineScope(Dispatchers.IO).launch {
@@ -232,20 +274,6 @@ class MainActivity : AppCompatActivity() {
                 db.getDao().insert(songFavourite)
             }
         }
-    }
-
-    private fun showProgress() {
-
-    }
-
-    private fun hideProgress() {
-        val fetch = findViewById<TextView>(R.id.fetch)
-        val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
-
-    }
-
-    private fun retry(retry: () -> Unit) {
-
     }
 
     private fun getTopSong(songApi: SongApi) {
@@ -268,9 +296,7 @@ class MainActivity : AppCompatActivity() {
                             if (!listSong.isEmpty()) {
                                 musicService?.let {
                                     it.setPlaylist(listSong)
-                                    if (it.cursong == null) {
-                                        it.setNewSong(listSong[0].id)
-                                    }
+                                    if (it.cursong == null) it.setNewSong(listSong[0].id)
                                 }
                                 changeContent()
                                 changePausePlayBtn()
@@ -292,11 +318,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun changeTogglePausePlayUi(value: Int) {
-        if (value == ACTION_PAUSE) {
-            btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
-        } else {
-            btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
-        }
+        if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
+        else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
     }
 
     private fun changeContent() {
@@ -323,7 +346,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
     private fun initControlBottomBar() {
@@ -358,9 +380,7 @@ class MainActivity : AppCompatActivity() {
         if (isStoragePermissionGranted()) {
             val collection =
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    MediaStore.Audio.Media.getContentUri(
-                        MediaStore.VOLUME_EXTERNAL_PRIMARY
-                    )
+                    MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
                 } else {
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 }
@@ -370,19 +390,12 @@ class MainActivity : AppCompatActivity() {
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.ALBUM_ID
-
             )
             val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
-            val selectionArgs = arrayOf(
-                TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES).toString()
-            )
-            val query = contentResolver.query(
-                collection,
-                projection,
-                selection,
-                selectionArgs,
-                null
-            )
+            val selectionArgs =
+                arrayOf(TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES).toString())
+            val query =
+                contentResolver.query(collection, projection, selection, selectionArgs, null)
             val retriever = MediaMetadataRetriever()
             val fetch = findViewById<TextView>(R.id.fetch)
             val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
@@ -433,10 +446,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val tabName = findViewById<TextView>(R.id.tv_tab_name)
         when (item.itemId) {
             R.id.online -> {
                 adapter.setData(listSong)
                 musicService?.isPlayOnline = true
+                tabName.text = "Top 100"
             }
             R.id.favourite -> {
                 val db = SongDatabase.getInstance(applicationContext)
@@ -455,11 +470,13 @@ class MainActivity : AppCompatActivity() {
                         }
                         adapter.setData(newList)
                         musicService?.isPlayOnline = true
+                        tabName.text = "Favourite Song"
                     }
                 }
             }
             R.id.local_song -> {
                 getLocalSong()
+                tabName.text = "Local Storage"
             }
         }
         return super.onOptionsItemSelected(item)

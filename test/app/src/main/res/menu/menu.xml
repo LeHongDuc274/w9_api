@@ -11,7 +11,7 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/local_song"
-        android:title="Local"
+        android:title="Local Storage"
         app:showAsAction="never"
         />
 </menu>

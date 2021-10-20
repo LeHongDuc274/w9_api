@@ -20,6 +20,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.NotificationTarget
 import com.example.myapplication.R
 import com.example.myapplication.activities.MainActivity
+import com.example.myapplication.activities.PlayingActivity
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.receiver.NotifyReceiver
 import com.example.myapplication.utils.Contains.ACTION_CANCEL
@@ -309,13 +310,9 @@ class MusicService : Service() {
     private fun initControlRemoteView(remoteView: RemoteViews, song: Song) {
         remoteView.apply {
             setOnClickPendingIntent(R.id.btn_next, getPendingIntent(ACTION_NEXT))
-
             setOnClickPendingIntent(R.id.btn_prev, getPendingIntent(ACTION_PREV))
-
             setOnClickPendingIntent(R.id.btn_pause, getPendingIntent(ACTION_PAUSE))
-
             setOnClickPendingIntent(R.id.btn_cancel, getPendingIntent(ACTION_CANCEL))
-
         }
     }
 

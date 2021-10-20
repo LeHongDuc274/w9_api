@@ -76,7 +76,6 @@ class PlayingActivity : AppCompatActivity() {
         }
     }
 
-
     private fun registerReceiver() {
         val filter = IntentFilter("fromNotifyToActivity")
         filter.addAction("updatePosition")
@@ -85,7 +84,6 @@ class PlayingActivity : AppCompatActivity() {
             filter
         )
     }
-
     private fun unregisterReceiver() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
     }
@@ -124,7 +122,6 @@ class PlayingActivity : AppCompatActivity() {
                 )
             }
         }
-
         override fun onServiceDisconnected(p0: ComponentName?) {
             isBound = false
         }
@@ -199,24 +196,19 @@ class PlayingActivity : AppCompatActivity() {
     }
 
     private fun changeRepeatState() {
-        if (musicService!!.repeat) {
-            btnRepeat.setImageResource(R.drawable.ic_repeat_on)
-        } else btnRepeat.setImageResource(R.drawable.ic_baseline_repeat_24)
+        if (musicService!!.repeat) btnRepeat.setImageResource(R.drawable.ic_repeat_on)
+        else btnRepeat.setImageResource(R.drawable.ic_baseline_repeat_24)
     }
 
     private fun changeShuffleState() {
-        if (musicService!!.shuffle) {
-            btnShuffle.setImageResource(R.drawable.ic_shuffle_on)
-        } else btnShuffle.setImageResource(R.drawable.ic_baseline_shuffle_24)
+        if (musicService!!.shuffle) btnShuffle.setImageResource(R.drawable.ic_shuffle_on)
+        else btnShuffle.setImageResource(R.drawable.ic_baseline_shuffle_24)
     }
 
 
     private fun changeTogglePausePlayUi(value: Int) {
-        if (value == ACTION_PAUSE) {
-            btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
-        } else {
-            btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
-        }
+        if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
+        else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
     }
 
     private fun updateSeekBar(value: Int, fromUser: Boolean) {
@@ -228,7 +220,6 @@ class PlayingActivity : AppCompatActivity() {
 
     private fun listenSeekBarChange() {
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-
         progressBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             var newPos = 0
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
@@ -246,7 +237,6 @@ class PlayingActivity : AppCompatActivity() {
                 fromUser = false
                 tvProgressChange.isVisible = false
             }
-
         })
     }
 
@@ -262,25 +252,16 @@ class PlayingActivity : AppCompatActivity() {
                     Contains.durationString(service.getMediaCurrentPos() / 1000)
                 progressBar.max = (curSong.duration)
                 //image change
-                if(curSong.thumbnail!=null) {
-                    var imgUrl : String? = null
+                if (curSong.thumbnail != null) {
+                    var imgUrl: String? = null
                     imgUrl = curSong.thumbnail
-                    Glide.with(applicationContext).load(imgUrl).centerInside().into(ivContent)
-                } else if(curSong.image.isNotEmpty()){
+                    Glide.with(applicationContext).load(imgUrl).circleCrop().into(ivContent)
+                } else if (curSong.image.isNotEmpty()) {
                     ivContent.setImageBitmap(
                         BitmapFactory.decodeByteArray(curSong.image, 0, curSong.image.size)
                     )
                 } else ivContent.setImageResource(R.drawable.ic_baseline_music_note_24)
-
-//                if (service.isPlayOnline) {
-//                    ivAddFragment.visibility = View.VISIBLE
-//                    tvRecommend.visibility = View.VISIBLE
-//
-//                } else {
-////                    ivAddFragment.visibility = View.GONE
-////                    tvRecommend.visibility = View.GONE
-//                    }
-                }
             }
         }
     }
+}
