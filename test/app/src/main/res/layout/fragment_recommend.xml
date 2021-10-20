@@ -45,6 +45,7 @@
         android:id="@+id/progress_circular"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:indeterminateTint="@color/purple_700"
         app:layout_constraintBottom_toBottomOf="@+id/rv_recommed"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/rv_recommed"
@@ -56,6 +57,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="fetching"
+        android:textColor="@color/purple_700"
+        android:textStyle="italic"
         app:layout_constraintEnd_toEndOf="@+id/progress_circular"
         app:layout_constraintStart_toStartOf="@+id/progress_circular"
         app:layout_constraintTop_toBottomOf="@+id/progress_circular" />

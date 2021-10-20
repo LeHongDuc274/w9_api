@@ -29,6 +29,7 @@ class SongAdapter(val context: Context) :
     private var listSongs = listOf<Song>()
     private var listFavourite = listOf<SongFavourite>()
     var type: Int = TYPE_OFLINE
+
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
     }
 
@@ -63,7 +64,7 @@ class SongAdapter(val context: Context) :
         if (type == TYPE_RECOMMEND || type == TYPE_OFLINE) {
             ivFavourite.visibility = View.GONE
             ivDownLoad.visibility = View.GONE
-        } else{
+        } else {
             ivFavourite.visibility = View.VISIBLE
             ivDownLoad.visibility = View.VISIBLE
         }
@@ -77,18 +78,17 @@ class SongAdapter(val context: Context) :
 
         holder.itemView.setOnClickListener { itemClick?.invoke(listSongs[position]) }
         ivFavourite.setOnClickListener {
-            ivFavourite.setImageResource(R.drawable.ic_heart_checked)
             favouriteClick?.invoke(listSongs[position])
         }
         ivDownLoad.setOnClickListener { downloadClick?.invoke(listSongs[position]) }
     }
 
-    override fun getItemCount(): Int =listSongs.size
+    override fun getItemCount(): Int = listSongs.size
 
     override fun getItemViewType(position: Int): Int {
         val contains = listFavourite.find { it.id.equals(listSongs[position].id) }
         if (contains != null) return 2 // favourite
-         else return 1 // not favourite
+        else return 1 // not favourite
     }
 
     fun setData(list: List<Song>) {

@@ -38,10 +38,12 @@ import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.os.Build
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.data.remote.search.Song2
 import com.example.myapplication.utils.Contains.BASE_IMG_URL
 import com.example.myapplication.utils.Contains.TYPE_OFLINE
+import com.google.android.material.snackbar.Snackbar
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -62,7 +64,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnFavourite: ImageButton
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
-    var listSongFavourite = listOf<SongFavourite>()
+    var listSongFavourite = mutableListOf<SongFavourite>()
     var listSongLocal = mutableListOf<Song>()
     var listSongSearch = listOf<Song2>()
     val broadcast = object : BroadcastReceiver() {
@@ -91,6 +93,7 @@ class MainActivity : AppCompatActivity() {
             filter
         )
     }
+
     private fun unregisterReceiver() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
     }
@@ -128,6 +131,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 return false
             }
+
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
@@ -167,8 +171,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+
             override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "Error" + t.message, Toast.LENGTH_LONG).show()
+                showSnack("Error call api")
             }
         })
     }
@@ -255,9 +260,9 @@ class MainActivity : AppCompatActivity() {
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
             val fileName = song.title
-            val appFile = File("/storage/emulated/0/Download/"  + fileName + ".mp3")
+            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
             if (appFile.canRead()) {
-                Toast.makeText(this, "file already exists", Toast.LENGTH_LONG).show()
+                showSnack("File Already Exists")
             } else {
                 val request = DownloadManager.Request(uri)
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -287,7 +292,25 @@ class MainActivity : AppCompatActivity() {
             }
         CoroutineScope(Dispatchers.IO).launch {
             if (songFavourite != null) {
-                db.getDao().insert(songFavourite)
+                val id = songFavourite.id
+                val isExists = db.getDao().isExist(id)
+                if (isExists) {
+                    db.getDao().deleteById(id)
+                    withContext(Dispatchers.Main) {
+                        showSnack("Remove Favourite List")
+                        listSongFavourite.removeIf {
+                            it.id == id
+                        }
+                        adapter.setListFavourite(listSongFavourite)
+                    }
+                } else {
+                    db.getDao().insert(songFavourite)
+                    withContext(Dispatchers.Main) {
+                        showSnack("Add Favourite List")
+                        listSongFavourite.add(songFavourite)
+                        adapter.setListFavourite(listSongFavourite)
+                    }
+                }
             }
         }
     }
@@ -457,7 +480,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initControlTabBar(){
+    private fun initControlTabBar() {
         val tabName = findViewById<TextView>(R.id.tv_tab_name)
         btnOnline.setOnClickListener {
             adapter.type = TYPE_ONLINE
@@ -500,5 +523,8 @@ class MainActivity : AppCompatActivity() {
             btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
         }
+    }
+    private fun showSnack(mess:String){
+        Snackbar.make(findViewById(R.id.root_layout),mess,Snackbar.LENGTH_LONG).show()
     }
 }

@@ -9,12 +9,18 @@ import com.example.myapplication.data.remote.responses.Song
 @Dao
 interface SongDao {
     @Query("select * from song_favourite")
-    suspend fun getAllSong(): List<SongFavourite>
+    suspend fun getAllSong(): MutableList<SongFavourite>
 
     @Insert
     suspend fun insert(song: SongFavourite)
 
     @Delete
     suspend fun delete(song: SongFavourite)
+
+    @Query("delete from song_favourite where id= :id")
+    suspend fun deleteById(id:String)
+
+    @Query(value = "select exists(select * from song_favourite where id = :id)")
+    suspend fun isExist(id:String) : Boolean
 
 }
