@@ -461,7 +461,8 @@ class MainActivity : AppCompatActivity() {
                             duration = duration / 1000,
                             id = id.toString(),
                             title = title,
-                            image = bitmap
+                            image = bitmap,
+                            isOffline = true
                         )
                         withContext(Dispatchers.Main) {
                             listSongLocal.add(songLocal)

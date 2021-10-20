@@ -38,6 +38,7 @@ data class Song(
     var thumbnail: String?=null,
     val title: String,
     var favorit: Boolean = false,
-    var image: ByteArray = byteArrayOf()
+    var image: ByteArray = byteArrayOf(),
+    var isOffline : Boolean = false
 )
 //var song = Song(artists_names = "name",duration = 100,id = "23",thumbnail = "link")

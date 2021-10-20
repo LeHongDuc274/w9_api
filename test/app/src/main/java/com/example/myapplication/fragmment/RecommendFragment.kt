@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -34,9 +35,12 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
 
         val view = inflater.inflate(R.layout.fragment_recommend, container, false)
         initRv(view)
-        loadRecommendSong()
+        setRecommendSong()
+      //  loadRecommendSong()
         return view
     }
+
+
 
     private fun initRv(view: View) {
         tvState = view.findViewById(R.id.tv_state)
@@ -54,9 +58,18 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
             musicService.playRecommend(it)
         }
     }
-
+    private fun setRecommendSong() {
+        val isOffline = musicService.cursong?.isOffline ?: true
+        if(!isOffline){
+            loadRecommendSong()
+        } else {
+           tvState.visibility=View.VISIBLE
+            tvState.text = "OffLine Music - Not Has Recommend Song"
+        }
+    }
     private fun loadRecommendSong() {
         val songId = musicService.cursong?.id
+        Log.e("tag",songId!!)
         progressBar.visibility = View.VISIBLE
         tvState.visibility = View.VISIBLE
         tvState.text = "fetching"
@@ -82,7 +95,6 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
                         loadRecommendSong()
                     }
                 }
-
             }
         }
     }
