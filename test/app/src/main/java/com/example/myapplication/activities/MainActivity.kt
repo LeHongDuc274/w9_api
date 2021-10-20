@@ -45,6 +45,7 @@ import com.example.myapplication.utils.Contains.TYPE_OFLINE
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 
@@ -254,16 +255,21 @@ class MainActivity : AppCompatActivity() {
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
             val fileName = song.title
-            val request = DownloadManager.Request(uri)
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            request.setTitle(fileName)
-            request.setDescription("downloading..")
-            request.setAllowedOverRoaming(false)
-            request.setDestinationInExternalPublicDir(
-                (Environment.DIRECTORY_DOWNLOADS),
-                fileName + ".mp3"
-            )
-            val downloadId = downloadManager.enqueue(request)
+            val appFile = File("/storage/emulated/0/Download/"  + fileName + ".mp3")
+            if (appFile.canRead()) {
+                Toast.makeText(this, "file already exists", Toast.LENGTH_LONG).show()
+            } else {
+                val request = DownloadManager.Request(uri)
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                request.setTitle(fileName)
+                request.setDescription("downloading..")
+                request.setAllowedOverRoaming(true)
+                request.setDestinationInExternalPublicDir(
+                    (Environment.DIRECTORY_DOWNLOADS),
+                    fileName + ".mp3"
+                )
+                val downloadId = downloadManager.enqueue(request)
+            }
         }
     }
 
