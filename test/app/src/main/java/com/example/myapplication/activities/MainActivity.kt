@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnFavourite: ImageButton
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
+    lateinit var tabName : TextView
     var listSongFavourite = mutableListOf<SongFavourite>()
     var listSongLocal = mutableListOf<Song>()
     var listSongSearch = listOf<Song2>()
@@ -121,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         btnOffline = findViewById(R.id.btn_offline)
         btnOnline = findViewById(R.id.btn_online)
         btnOnline.setImageResource(R.drawable.outline_cloud_checked)
+        tabName = findViewById<TextView>(R.id.tv_tab_name)
         initControlBottomBar()
         initControlTabBar()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener,
@@ -128,10 +130,10 @@ class MainActivity : AppCompatActivity() {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 p0?.let {
                     getSearchResult(it, searchApi)
+                    tabName.text = "Search"
                 }
                 return false
             }
-
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
@@ -139,6 +141,7 @@ class MainActivity : AppCompatActivity() {
         searchView.setOnCloseListener {
             adapter.setData(listSong)
             musicService?.setPlaylist(listSong)
+            tabName.text = "Top 100"
             false
         }
     }
@@ -482,7 +485,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initControlTabBar() {
-        val tabName = findViewById<TextView>(R.id.tv_tab_name)
+
         btnOnline.setOnClickListener {
             adapter.type = TYPE_ONLINE
             adapter.setData(listSong)
