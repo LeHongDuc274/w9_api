@@ -32,14 +32,15 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/margin_small"
-        android:ellipsize="end"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
         android:fontFamily="@font/lora_italic_wght"
-        android:maxLines="1"
         android:text="title"
         android:textSize="@dimen/text_size_medium"
         app:layout_constraintEnd_toStartOf="@+id/iv_favourite"
         app:layout_constraintStart_toEndOf="@+id/card"
-        app:layout_constraintTop_toTopOf="@+id/card" />
+        app:layout_constraintTop_toTopOf="@+id/card"
+        android:singleLine="true" />
     <ImageView
         android:id="@+id/iv_favourite"
         android:layout_width="wrap_content"

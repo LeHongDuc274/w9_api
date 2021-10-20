@@ -26,7 +26,7 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
     lateinit var close : ImageView
     lateinit var tvState: TextView
     lateinit var progressBar : ProgressBar
-    private var adapter = SongAdapter(context,TYPE_RECOMMEND)
+    private var adapter = SongAdapter(context)
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -46,6 +46,7 @@ class RecommendFragment(val musicService: MusicService,context:Context) : Fragme
         close.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
+        adapter.type = TYPE_RECOMMEND
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter
         rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)

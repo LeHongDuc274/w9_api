@@ -17,17 +17,18 @@ import com.example.myapplication.activities.MainActivity
 import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.utils.Contains.TYPE_OFLINE
+import com.example.myapplication.utils.Contains.TYPE_ONLINE
 import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.example.myapplication.utils.Contains.durationString
 
-class SongAdapter(val context: Context, val type: Int) :
+class SongAdapter(val context: Context) :
     RecyclerView.Adapter<SongAdapter.ViewHolder>() {
     private var itemClick: ((Song) -> Unit)? = null
     private var favouriteClick: ((Song) -> Unit)? = null
     private var downloadClick: ((Song) -> Unit)? = null
     private var listSongs = listOf<Song>()
     private var listFavourite = listOf<SongFavourite>()
-
+    var type: Int = TYPE_OFLINE
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
     }
 
@@ -62,6 +63,9 @@ class SongAdapter(val context: Context, val type: Int) :
         if (type == TYPE_RECOMMEND || type == TYPE_OFLINE) {
             ivFavourite.visibility = View.GONE
             ivDownLoad.visibility = View.GONE
+        } else{
+            ivFavourite.visibility = View.VISIBLE
+            ivDownLoad.visibility = View.VISIBLE
         }
 
         tvTitle.text = listSongs[position].title

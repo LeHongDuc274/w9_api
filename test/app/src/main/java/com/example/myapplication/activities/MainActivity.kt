@@ -41,6 +41,7 @@ import android.provider.MediaStore
 import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.data.remote.search.Song2
 import com.example.myapplication.utils.Contains.BASE_IMG_URL
+import com.example.myapplication.utils.Contains.TYPE_OFLINE
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -50,13 +51,16 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
     private var response: TopSongResponse? = null
     private var listSong = listOf<Song>()
-    private var adapter = SongAdapter(this, TYPE_ONLINE)
+    private var adapter = SongAdapter(this)
     private var musicService: MusicService? = null
     private var isBound = false
     lateinit var tvContent: TextView
     lateinit var btnPause: ImageView
     lateinit var ivContent: ImageView
     lateinit var searchView: androidx.appcompat.widget.SearchView
+    lateinit var btnFavourite: ImageButton
+    lateinit var btnOnline: ImageButton
+    lateinit var btnOffline: ImageButton
     var listSongFavourite = listOf<SongFavourite>()
     var listSongLocal = mutableListOf<Song>()
     var listSongSearch = listOf<Song2>()
@@ -109,7 +113,12 @@ class MainActivity : AppCompatActivity() {
         btnPause = findViewById(R.id.btn_pause)
         ivContent = findViewById(R.id.img_song)
         searchView = findViewById(R.id.search_view)
+        btnFavourite = findViewById(R.id.btn_favourite)
+        btnOffline = findViewById(R.id.btn_offline)
+        btnOnline = findViewById(R.id.btn_online)
+        btnOnline.setImageResource(R.drawable.outline_cloud_checked)
         initControlBottomBar()
+        initControlTabBar()
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener,
             androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
@@ -201,6 +210,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initRv() {
         val rv = findViewById<RecyclerView>(R.id.rv_top_song)
+        adapter.type = TYPE_ONLINE
         rv.adapter = adapter
         rv.layoutManager =
             LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
@@ -433,6 +443,7 @@ class MainActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     fetch.visibility = View.GONE
                     progressBar.visibility = View.GONE
+                    adapter.type = TYPE_OFLINE
                     adapter.setData(listSongLocal)
                     musicService?.setPlaylistOffline(listSongLocal)
                 }
@@ -440,45 +451,48 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    private fun initControlTabBar(){
         val tabName = findViewById<TextView>(R.id.tv_tab_name)
-        when (item.itemId) {
-            R.id.online -> {
-                adapter.setData(listSong)
-                musicService?.isPlayOnline = true
-                tabName.text = "Top 100"
-            }
-            R.id.favourite -> {
-                val db = SongDatabase.getInstance(applicationContext)
-                CoroutineScope(Dispatchers.IO).launch {
-                    listSongFavourite = db.getDao().getAllSong()
-                    withContext(Dispatchers.Main) {
-                        adapter.setListFavourite(listSongFavourite)
-                        val newList: List<Song> = listSongFavourite.map {
-                            Song(
-                                artists_names = it.artists_names,
-                                duration = it.duration,
-                                title = it.title,
-                                id = it.id,
-                                thumbnail = it.thumbnail,
-                            )
-                        }
-                        adapter.setData(newList)
-                        musicService?.isPlayOnline = true
-                        tabName.text = "Favourite Song"
+        btnOnline.setOnClickListener {
+            adapter.type = TYPE_ONLINE
+            adapter.setData(listSong)
+            musicService?.isPlayOnline = true
+            tabName.text = "Top 100"
+            btnOnline.setImageResource(R.drawable.outline_cloud_checked)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+        }
+        btnFavourite.setOnClickListener {
+            val db = SongDatabase.getInstance(applicationContext)
+            CoroutineScope(Dispatchers.IO).launch {
+                listSongFavourite = db.getDao().getAllSong()
+                withContext(Dispatchers.Main) {
+                    adapter.setListFavourite(listSongFavourite)
+                    val newList: List<Song> = listSongFavourite.map {
+                        Song(
+                            artists_names = it.artists_names,
+                            duration = it.duration,
+                            title = it.title,
+                            id = it.id,
+                            thumbnail = it.thumbnail,
+                        )
                     }
+                    adapter.type = TYPE_ONLINE
+                    adapter.setData(newList)
+                    musicService?.isPlayOnline = true
+                    tabName.text = "Favourite Song"
+                    btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
+                    btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+                    btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
                 }
             }
-            R.id.local_song -> {
-                getLocalSong()
-                tabName.text = "Local Storage"
-            }
         }
-        return super.onOptionsItemSelected(item)
+        btnOffline.setOnClickListener {
+            getLocalSong()
+            tabName.text = "Local Storage"
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
+        }
     }
 }
