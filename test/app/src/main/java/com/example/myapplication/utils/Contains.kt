@@ -1,5 +1,10 @@
 package com.example.myapplication.utils
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+
 object Contains {
     const val ACTION_PAUSE = 1
     const val ACTION_PLAY = 2
@@ -19,6 +24,24 @@ object Contains {
         val minute = duration / 60
         val seconds = duration % 60
         return "${if (minute > 9) minute else "0$minute"}:${if (seconds > 9) seconds else "0$seconds"}"
+    }
+
+    fun checkNetWorkAvailable(context: Context): Boolean {
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork
+            if (network == null) {
+                return false
+            }
+            val capability = connectivityManager.getNetworkCapabilities(network)
+            return capability != null && (capability.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || capability.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            )
+        } else {
+            val networkInfo = connectivityManager.activeNetworkInfo
+            return networkInfo != null && networkInfo.isConnected
+        }
     }
 
 }

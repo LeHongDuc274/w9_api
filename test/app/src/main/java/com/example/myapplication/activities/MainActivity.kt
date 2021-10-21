@@ -36,6 +36,7 @@ import androidx.core.app.ActivityCompat
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.net.ConnectivityManager
 import android.os.Build
 import android.provider.MediaStore
 import androidx.annotation.RequiresApi
@@ -46,6 +47,7 @@ import com.example.myapplication.fragmment.FavouriteFragment
 import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.utils.Contains.BASE_IMG_URL
 import com.example.myapplication.utils.Contains.TYPE_OFLINE
+import com.example.myapplication.utils.Contains.checkNetWorkAvailable
 import com.google.android.material.snackbar.Snackbar
 import retrofit2.Call
 import retrofit2.Callback
@@ -68,6 +70,14 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
     lateinit var tabName: TextView
+    var songApi: SongApi
+    var searchApi: SongApi
+
+    init {
+        songApi = SongApi.create()
+        searchApi = SongApi.createSearch()
+    }
+
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -86,6 +96,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    val broadcastInternet = object : BroadcastReceiver() {
+        override fun onReceive(p0: Context?, p1: Intent?) {
+            p1?.let {
+                if (it.action == ConnectivityManager.CONNECTIVITY_ACTION) {
+                    getTopSong(songApi)
+                    musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
+                }
+            }
+        }
+    }
 
     private fun registerReceiver() {
         val filter = IntentFilter("fromNotifyToActivity")
@@ -93,10 +113,13 @@ class MainActivity : AppCompatActivity() {
             broadcast,
             filter
         )
+        val filter2 = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        registerReceiver(broadcastInternet, filter2)
     }
 
     private fun unregisterReceiver() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
+        unregisterReceiver(broadcastInternet)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,8 +128,6 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.hide()
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        val songApi = SongApi.create()
-        val searchApi = SongApi.createSearch()
         initViews(searchApi)
         initRv()
         bindService()
@@ -133,7 +154,10 @@ class MainActivity : AppCompatActivity() {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 musicService?.let {
                     val transaction = supportFragmentManager.beginTransaction()
-                    transaction.replace(R.id.fragment_container,RecommendFragment(it,this@MainActivity,p0))
+                    transaction.replace(
+                        R.id.fragment_container,
+                        RecommendFragment(it, this@MainActivity, p0)
+                    )
                     transaction.addToBackStack(null)
                     transaction.commit()
                     searchView.clearFocus()
@@ -146,8 +170,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-
-
 
     override fun onStart() {
         super.onStart()
@@ -169,6 +191,7 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
             val binder = p1 as MusicService.Mybind
             musicService = binder.getInstance()
+            musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
             isBound = true
         }
 
@@ -252,48 +275,63 @@ class MainActivity : AppCompatActivity() {
     private fun getTopSong(songApi: SongApi) {
         val fetch = findViewById<TextView>(R.id.fetch)
         val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
-        fetch.visibility = View.VISIBLE
-        progressBar.visibility = View.VISIBLE
-        fetch.text = "fetching"
+        if (checkNetWorkAvailable(this)) {
+            fetch.visibility = View.VISIBLE
+            progressBar.visibility = View.VISIBLE
+            fetch.text = "fetching"
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                withTimeout(3000) {
-                    response = songApi.getTopSong()
-                    withContext(Dispatchers.Main) {
-                        response?.let {
-                            listSong = it.data.song.toMutableList()
-                            adapter.setData(listSong)
-                            fetch.visibility = View.GONE
-                            progressBar.visibility = View.GONE
-                            if (!listSong.isEmpty()) {
-                                musicService?.let {
-                                    if (it.isPlaylistEmpty()) {
-                                        it.setPlaylist(listSong)
-                                        if (it.cursong == null) it.setNewSong(listSong[0].id)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    withTimeout(3000) {
+                        try {
+                            response = songApi.getTopSong()
+                        } catch (e:Exception){
+                            e.printStackTrace()
+                        }
+                        withContext(Dispatchers.Main) {
+                            response?.let {
+                                listSong = it.data.song.toMutableList()
+                                adapter.setData(listSong)
+                                fetch.visibility = View.GONE
+                                progressBar.visibility = View.GONE
+                                if (!listSong.isEmpty()) {
+                                    musicService?.let {
+                                        if (it.isPlaylistEmpty()) {
+                                            it.setPlaylist(listSong)
+                                            if (it.cursong == null) it.setNewSong(listSong[0].id)
+                                        }
                                     }
+                                    changeContent()
+                                    changePausePlayBtn()
                                 }
-                                changeContent()
-                                changePausePlayBtn()
                             }
                         }
                     }
-                }
-            } catch (e: TimeoutCancellationException) {
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
-                    fetch.text = "Retry"
-                    fetch.setOnClickListener {
-                        getTopSong(songApi)
+                } catch (e: TimeoutCancellationException) {
+                    withContext(Dispatchers.Main) {
+                        progressBar.visibility = View.GONE
+                        fetch.text = "Retry"
+                        fetch.setOnClickListener {
+                            getTopSong(songApi)
+                        }
                     }
                 }
             }
+        } else {
+            fetch.visibility = View.GONE
+            progressBar.visibility = View.GONE
+            showSnack("No Internet")
         }
     }
 
     private fun changeTogglePausePlayUi(value: Int) {
         if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
         else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
+        musicService?.let {
+            if(it.internetConnected== false && it.namePlaylist !="OFFLINE"){
+                showSnack("No Internet")
+            }
+        }
     }
 
     private fun changeContent() {
@@ -333,7 +371,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         layout.setOnClickListener {
-            if (isBound && listSong.isNotEmpty()) {
+            if (isBound ) {
                 val intent = Intent(this, PlayingActivity::class.java)
                 startActivity(intent)
             }

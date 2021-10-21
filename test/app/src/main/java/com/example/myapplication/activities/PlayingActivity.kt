@@ -71,7 +71,6 @@ class PlayingActivity : AppCompatActivity() {
                             changeTogglePausePlayUi(value)
                         }
                         ACTION_CANCEL -> changeTogglePausePlayUi(ACTION_PAUSE)
-
                     }
                 }
             }
@@ -221,6 +220,11 @@ class PlayingActivity : AppCompatActivity() {
     private fun changeTogglePausePlayUi(value: Int) {
         if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
         else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
+        musicService?.let {
+            if(it.internetConnected== false && it.namePlaylist !="OFFLINE"){
+                showSnack("No Internet ")
+            }
+        }
     }
 
     private fun updateSeekBar(value: Int, fromUser: Boolean) {

@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.RemoteViews
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
@@ -32,6 +33,7 @@ import com.example.myapplication.utils.Contains.ACTION_PREV
 import com.example.myapplication.utils.Contains.FROM_NOTIFY
 import com.example.myapplication.utils.MyApp
 import kotlinx.coroutines.*
+import java.lang.IllegalStateException
 import kotlin.random.Random
 
 class MusicService : Service() {
@@ -43,6 +45,7 @@ class MusicService : Service() {
     var shuffle = false
     var repeat = false
     var namePlaylist = "ONLINE"
+    var internetConnected = false
 
     inner class Mybind() : Binder() {
         fun getInstance(): MusicService {
@@ -52,10 +55,6 @@ class MusicService : Service() {
 
     override fun onBind(p0: Intent?): IBinder {
         return Mybind()
-    }
-
-    override fun onCreate() {
-        super.onCreate()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -85,7 +84,8 @@ class MusicService : Service() {
             songPos = playlist.indexOf(cursong)
             mediaPlayer.stop()
             val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
-            mediaPlayer = MediaPlayer.create(applicationContext, uri)
+            if(internetConnected) mediaPlayer = MediaPlayer.create(applicationContext, uri)
+                else mediaPlayer.reset()
             mediaPlayer.setOnCompletionListener {
                 nextSong()
             }
@@ -108,7 +108,11 @@ class MusicService : Service() {
 
 
     fun playSong() {
-        mediaPlayer.start()
+       try {
+           mediaPlayer.start()
+       } catch (e:IllegalStateException){
+           e.printStackTrace()
+       }
     }
 
 
@@ -128,7 +132,6 @@ class MusicService : Service() {
     }
 
     fun nextSong() {
-
         if (!repeat && !shuffle) { // repeat disable _>next
             if (songPos < playlist.size - 1) {
                 songPos++

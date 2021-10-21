@@ -3,7 +3,9 @@ package com.example.myapplication.fragmment
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.MediaMetadataRetriever
+import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -80,7 +82,7 @@ class BaseFragment(
             clickItem(it)
         }
     }
-
+    val intent = IntentFilter()
     private fun clickItem(it: Song) {
         musicService.setPlaylist(listSongLocal, "OFFLINE")
         musicService.setNewSong(it.id)
