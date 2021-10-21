@@ -13,33 +13,32 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.core.app.ActivityCompat
-import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.adapter.SongAdapter
+import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
-import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
-import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 
-class RecommendFragment(
+
+class FavouriteFragment(
     val musicService: MusicService,
-    context: Context,
-    val query: String? = null
+    context: Context
 ) : Fragment() {
+
 
     lateinit var rvrecommnend: RecyclerView
     lateinit var close: ImageView
@@ -48,49 +47,40 @@ class RecommendFragment(
     lateinit var tvName : TextView
     lateinit var btnPlay : Button
     private var adapter = SongAdapter(context)
-    private var listSong = mutableListOf<Song>()
+    var newListFavourite: List<Song> = listOf()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
-        val view = inflater.inflate(R.layout.fragment_recommend, container, false)
+        // Inflate the layout for this fragment
+        val view = inflater.inflate(R.layout.fragment_favourite, container, false)
         initRv(view)
-
-        if (query == null) {
-            setRecommendSong()
-            tvName.text = "Playlist Recommend của bài hát :" + musicService.cursong!!.title
-        }
-        else {
-            getSearchResult(query)
-            tvName.text = "Playlist Kết quả tìm kiếm của :  " + query + " key"
-        }
+        setFavouriteSong()
         return view
     }
-
 
     private fun initRv(view: View) {
         tvState = view.findViewById(R.id.tv_state)
         progressBar = view.findViewById(R.id.progress_circular)
         tvName = view.findViewById(R.id.tv_recommed)
-        tvName.isSelected = true
-        close = view.findViewById(R.id.close)
-        close.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
-        }
         btnPlay = view.findViewById(R.id.play_playlist)
+        close = view.findViewById(R.id.close)
+        tvName.text = "Favourite Playlit"
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-            musicService.setPlaylist(listSong)
-            musicService.setNewSong(listSong[0].id)
+            musicService.setPlaylist(newListFavourite)
+            musicService.setNewSong(newListFavourite[0].id)
             musicService.playSong()
             musicService.sendToActivity(ACTION_CHANGE_SONG)
+        }
+        close.setOnClickListener {
+            requireActivity().supportFragmentManager.popBackStack()
         }
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter
         rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         adapter.setItemClick {
-            musicService.setPlaylist(listSong)
+            musicService.setPlaylist(newListFavourite)
             musicService.setNewSong(it.id)
             musicService.playSong()
             musicService.sendToActivity(ACTION_CHANGE_SONG)
@@ -98,45 +88,23 @@ class RecommendFragment(
         adapter.setDownloadClick {
             downloadSong(it)
         }
+        adapter.setFavouriteClick {
+            removeFavourite(it)
+        }
     }
 
-    private fun getSearchResult(text: String) {
-        val search = text.trim()
-        val searchApi = SongApi.createSearch()
-        searchApi.search("artist,song", 20, search).enqueue(object : Callback<SearchResponse> {
-            override fun onResponse(
-                call: Call<SearchResponse>,
-                response: Response<SearchResponse>
-            ) {
-                progressBar.visibility = View.GONE
-                tvState.visibility = View.GONE
-                if (response.isSuccessful) {
-                    val body = response.body()
-//                    "https://photo-resize-zmp3.zadn.vn/w94_r1x1_jpeg" +
-//                            "/cover/4/9/d/a/49da6a1d6cf13a42e77bc3a945d9dd6b.jpg?fs=MTYzNDY4MzgyOTUwM3x3ZWJWNHw"
-                    body?.let {
-                        if (it.data.isNotEmpty()) {
-                            val listSongSearch = it.data[0].song.toMutableList()
-                            listSong = listSongSearch.map {
-                                Song(
-                                    artists_names = it.artist,
-                                    title = it.name,
-                                    duration = it.duration.toInt(),
-                                    thumbnail = Contains.BASE_IMG_URL + it.thumb,
-                                    id = it.id
-                                )
-                            }.toMutableList()
-                            adapter.setData(listSong)
-                            if (listSongSearch.isNotEmpty()) btnPlay.isClickable = true
-                        } else showSnack("Not Result for this key ${search.uppercase()}")
-                    }
+    private fun removeFavourite(song: Song) {
+        val db = SongDatabase.getInstance(requireActivity().applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            val id = song.id
+            val isExists = db.getDao().isExist(id)
+            if (isExists) {
+                db.getDao().deleteById(id)
+                withContext(Dispatchers.Main) {
+                    showSnack("Remove Favourite List")
                 }
             }
-
-            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
-                showSnack("Error call api")
-            }
-        })
+        }
     }
 
     private fun downloadSong(song: Song) {
@@ -184,48 +152,41 @@ class RecommendFragment(
         }
     }
 
-    private fun setRecommendSong() {
-        val isOffline = musicService.cursong?.isOffline ?: true
-        if (!isOffline ) {
-            loadRecommendSong()
-        } else {
-            tvState.visibility = View.VISIBLE
-            tvState.text = "OffLine Music - Not Has Recommend Song"
-        }
+    private fun setFavouriteSong() {
+        loadFavouriteSong()
     }
 
-    private fun loadRecommendSong() {
-        val songId = musicService.cursong?.id
-        Log.e("tag", songId!!)
+    private fun loadFavouriteSong() {
+        val db = SongDatabase.getInstance(requireActivity().applicationContext)
         progressBar.visibility = View.VISIBLE
         tvState.visibility = View.VISIBLE
         tvState.text = "fetching"
-
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                withTimeout(3000) {
-                    val recommendResponses = SongApi.create().getRecommend("audio", songId)
-                    withContext(Dispatchers.Main) {
-                        listSong = recommendResponses.data.items.toMutableList()
-                        listSong.let { adapter.setData(it.toMutableList()) }
-                        progressBar.visibility = View.GONE
-                        tvState.visibility = View.GONE
-                    }
+            val listSongFavourite = db.getDao().getAllSong()
+            withContext(Dispatchers.Main) {
+                newListFavourite = listSongFavourite.map {
+                    Song(
+                        artists_names = it.artists_names,
+                        duration = it.duration,
+                        title = it.title,
+                        id = it.id,
+                        thumbnail = it.thumbnail,
+                        favorit = true
+                    )
                 }
-            } catch (e: TimeoutCancellationException) {
-                withContext(Dispatchers.Main) {
-                    tvState.visibility = View.GONE
-                    tvState.text = "Retry"
-                    tvState.setOnClickListener {
-                        loadRecommendSong()
-                    }
-                }
+                adapter.setData(newListFavourite.toMutableList())
+                progressBar.visibility = View.GONE
+                tvState.visibility = View.GONE
+                btnPlay.isClickable = true
             }
         }
     }
 
     private fun showSnack(mess: String) {
-        Snackbar.make(requireActivity().findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG)
-            .show()
+        Snackbar.make(
+            requireActivity().findViewById(R.id.root_layout),
+            mess,
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 }

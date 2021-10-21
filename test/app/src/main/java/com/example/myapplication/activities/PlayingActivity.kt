@@ -14,6 +14,8 @@ import androidx.core.view.isVisible
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
+import com.example.myapplication.data.local.SongDatabase
+import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.service.MusicService
@@ -23,10 +25,8 @@ import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.ACTION_PAUSE
 import com.example.myapplication.utils.Contains.ACTION_PLAY
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.*
 
 class PlayingActivity : AppCompatActivity() {
     private var musicService: MusicService? = null
@@ -36,8 +36,8 @@ class PlayingActivity : AppCompatActivity() {
     lateinit var tvSinger: TextView
     lateinit var tvTitle: TextView
     lateinit var tvDuration: TextView
-    lateinit var btnRepeat: ImageButton
-    lateinit var btnShuffle: ImageButton
+    lateinit var btnRepeat: ImageView
+    lateinit var btnShuffle: ImageView
     lateinit var tvProgressChange: TextView
     lateinit var progressBar: SeekBar
     lateinit var volumBar: SeekBar
@@ -47,6 +47,8 @@ class PlayingActivity : AppCompatActivity() {
     lateinit var ivVolum: ImageView
     lateinit var ivAddFragment: ImageView
     lateinit var tvRecommend: TextView
+    lateinit var ivFavourite: ImageView
+
     private var curSong: Song? = null
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
@@ -84,6 +86,7 @@ class PlayingActivity : AppCompatActivity() {
             filter
         )
     }
+
     private fun unregisterReceiver() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
     }
@@ -122,6 +125,7 @@ class PlayingActivity : AppCompatActivity() {
                 )
             }
         }
+
         override fun onServiceDisconnected(p0: ComponentName?) {
             isBound = false
         }
@@ -134,7 +138,9 @@ class PlayingActivity : AppCompatActivity() {
 
     private fun initViews() {
         tvTitle = findViewById<TextView>(R.id.tv_title)
+        tvTitle.isSelected = true
         tvSinger = findViewById<TextView>(R.id.tv_singer)
+        tvSinger.isSelected = true
         tvCurDuration = findViewById<TextView>(R.id.tv_current_duration)
         tvDuration = findViewById<TextView>(R.id.tv_duration)
         progressBar = findViewById<SeekBar>(R.id.progress_horizontal)
@@ -147,6 +153,7 @@ class PlayingActivity : AppCompatActivity() {
         ivVolum = findViewById(R.id.iv_volum)
         ivAddFragment = findViewById(R.id.add_fragment)
         tvRecommend = findViewById(R.id.tv_recommed)
+        ivFavourite = findViewById(R.id.iv_favourite)
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         volumBar.max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
@@ -185,10 +192,15 @@ class PlayingActivity : AppCompatActivity() {
             musicService?.setShuffle()
             changeShuffleState()
         }
+        ivFavourite.setOnClickListener {
+            musicService?.cursong?.let {
+                addFavorite(it)
+            }
+        }
         ivAddFragment.setOnClickListener {
             musicService?.let {
                 val transaction = supportFragmentManager.beginTransaction()
-                transaction.add(R.id.fragment_container, RecommendFragment(it, this))
+                transaction.replace(R.id.fragment_container, RecommendFragment(it, this))
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -218,6 +230,39 @@ class PlayingActivity : AppCompatActivity() {
         }
     }
 
+    private fun addFavorite(song: Song) {
+        val songFavourite =
+            song.thumbnail?.let {
+                SongFavourite(
+                    song.artists_names,
+                    song.duration,
+                    song.id,
+                    it,
+                    song.title
+                )
+            }
+        val db = SongDatabase.getInstance(applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            if (songFavourite != null) {
+                val id = songFavourite.id
+                val isExists = db.getDao().isExist(id)
+                if (isExists) {
+                    db.getDao().deleteById(id)
+                    withContext(Dispatchers.Main) {
+                        showSnack("Remove Favourite List")
+                        ivFavourite.setImageResource(R.drawable.ic_baseline_heart_broken_24)
+                    }
+                } else {
+                    db.getDao().insert(songFavourite)
+                    withContext(Dispatchers.Main) {
+                        showSnack("Add Favourite List")
+                        ivFavourite.setImageResource(R.drawable.ic_heart_checked)
+                    }
+                }
+            }
+        }
+    }
+
     private fun listenSeekBarChange() {
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         progressBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -226,12 +271,10 @@ class PlayingActivity : AppCompatActivity() {
                 if (fromUser) newPos = p1
                 tvProgressChange.text = Contains.durationString(newPos)
             }
-
             override fun onStartTrackingTouch(p0: SeekBar?) {
                 fromUser = true
                 tvProgressChange.isVisible = true
             }
-
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 musicService?.seekTo(newPos)
                 fromUser = false
@@ -253,15 +296,32 @@ class PlayingActivity : AppCompatActivity() {
                 progressBar.max = (curSong.duration)
                 //image change
                 if (curSong.thumbnail != null) {
-                    var imgUrl: String? = null
-                    imgUrl = curSong.thumbnail
+                   val imgUrl = curSong.thumbnail
                     Glide.with(applicationContext).load(imgUrl).circleCrop().into(ivContent)
                 } else if (curSong.image.isNotEmpty()) {
                     ivContent.setImageBitmap(
                         BitmapFactory.decodeByteArray(curSong.image, 0, curSong.image.size)
                     )
                 } else ivContent.setImageResource(R.drawable.ic_baseline_music_note_24)
+                // ofline mode - hide view
+                if (curSong.isOffline) ivFavourite.visibility = View.GONE
+                else ivFavourite.visibility = View.VISIBLE
+                //favourite change
+                //check existed database
+                val id = curSong.id
+                val db = SongDatabase.getInstance(applicationContext)
+                CoroutineScope(Dispatchers.IO).launch {
+                    val isExists = db.getDao().isExist(id)
+                    withContext(Dispatchers.Main) {
+                        if (isExists) ivFavourite.setImageResource(R.drawable.ic_heart_checked)
+                        else ivFavourite.setImageResource(R.drawable.ic_baseline_heart_broken_24)
+                    }
+                }
             }
         }
+    }
+
+    private fun showSnack(mess: String) {
+        Snackbar.make(findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG).show()
     }
 }

@@ -20,4 +20,5 @@ object Contains {
         val seconds = duration % 60
         return "${if (minute > 9) minute else "0$minute"}:${if (seconds > 9) seconds else "0$seconds"}"
     }
+
 }

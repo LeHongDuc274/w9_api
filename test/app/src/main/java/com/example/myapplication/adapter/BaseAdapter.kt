@@ -2,31 +2,24 @@ package com.example.myapplication.adapter
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.net.Uri
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
-import com.example.myapplication.activities.MainActivity
 import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
-import com.example.myapplication.utils.Contains.TYPE_OFLINE
-import com.example.myapplication.utils.Contains.TYPE_ONLINE
-import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
-import com.example.myapplication.utils.Contains.durationString
+import com.example.myapplication.utils.Contains
 
-class SongAdapter(val context: Context) :
-    RecyclerView.Adapter<SongAdapter.ViewHolder>() {
+class BaseAdapter(val context: Context) :
+    RecyclerView.Adapter<BaseAdapter.ViewHolder>() {
     private var itemClick: ((Song) -> Unit)? = null
-    private var favouriteClick: ((Song) -> Unit)? = null
-    private var downloadClick: ((Song) -> Unit)? = null
-    private var listSongs = mutableListOf<Song>()
+    private var listSongs = listOf<Song>()
+    private var listFavourite = listOf<SongFavourite>()
+
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
     }
 
@@ -36,40 +29,36 @@ class SongAdapter(val context: Context) :
         )
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+
+    override fun onBindViewHolder(holder: BaseAdapter.ViewHolder, position: Int) {
         val tvTitle = holder.itemView.findViewById<TextView>(R.id.tv_title)
         val tvSinger = holder.itemView.findViewById<TextView>(R.id.tv_singer)
         val tvDuration = holder.itemView.findViewById<TextView>(R.id.tv_duration)
         val ivFavourite = holder.itemView.findViewById<ImageView>(R.id.iv_favourite)
         val ivDownLoad = holder.itemView.findViewById<ImageView>(R.id.download)
         val iv = holder.itemView.findViewById<ImageView>(R.id.img_song)
-
-        if (listSongs[position].thumbnail != null) {
-            var imgUrl: String? = null
-            imgUrl = listSongs[position].thumbnail
-            Glide.with(context).load(imgUrl).centerInside().into(iv)
+        ivDownLoad.visibility = View.GONE
+        ivFavourite.visibility = View.GONE
+        //image off
+        if (listSongs[position].image.isNotEmpty()) {
+            iv.setImageBitmap(
+                BitmapFactory.decodeByteArray(
+                    listSongs[position].image,
+                    0,
+                    listSongs[position].image.size
+                )
+            )
         } else iv.setImageResource(R.drawable.ic_baseline_music_note_24)
-
+        //text off
         tvTitle.text = listSongs[position].title
         tvSinger.text = listSongs[position].artists_names
-        tvDuration.text = durationString(listSongs[position].duration)
-
-        // when favourite change
-        if (listSongs[position].favorit) ivFavourite.setImageResource(R.drawable.ic_heart_checked)
-        else ivFavourite.visibility = View.GONE
-
+        tvDuration.text = Contains.durationString(listSongs[position].duration)
         holder.itemView.setOnClickListener { itemClick?.invoke(listSongs[position]) }
-        ivFavourite.setOnClickListener {
-            favouriteClick?.invoke(listSongs[position])
-            ivFavourite.visibility = View.GONE
-        }
-        ivDownLoad.setOnClickListener { downloadClick?.invoke(listSongs[position]) }
     }
-
 
     override fun getItemCount(): Int = listSongs.size
 
-    fun setData(list: MutableList<Song>) {
+    fun setData(list: List<Song>) {
         listSongs = list
         notifyDataSetChanged()
     }
@@ -78,11 +67,4 @@ class SongAdapter(val context: Context) :
         itemClick = action
     }
 
-    fun setFavouriteClick(action: (Song) -> Unit) {
-        favouriteClick = action
-    }
-
-    fun setDownloadClick(action: (Song) -> Unit) {
-        downloadClick = action
-    }
 }

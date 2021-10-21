@@ -41,6 +41,9 @@ import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.data.remote.search.Song2
+import com.example.myapplication.fragmment.BaseFragment
+import com.example.myapplication.fragmment.FavouriteFragment
+import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.utils.Contains.BASE_IMG_URL
 import com.example.myapplication.utils.Contains.TYPE_OFLINE
 import com.google.android.material.snackbar.Snackbar
@@ -53,7 +56,7 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private var response: TopSongResponse? = null
-    private var listSong = listOf<Song>()
+    private var listSong = mutableListOf<Song>()
     private var adapter = SongAdapter(this)
     private var musicService: MusicService? = null
     private var isBound = false
@@ -64,10 +67,10 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnFavourite: ImageButton
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
-    lateinit var tabName : TextView
+    lateinit var tabName: TextView
     var listSongFavourite = mutableListOf<SongFavourite>()
     var listSongLocal = mutableListOf<Song>()
-    var listSongSearch = listOf<Song2>()
+    var listSongSearch = mutableListOf<Song2>()
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -115,6 +118,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews(searchApi: SongApi) {
         tvContent = findViewById(R.id.tv_infor)
+        tvContent.isSelected = true
         btnPause = findViewById(R.id.btn_pause)
         ivContent = findViewById(R.id.img_song)
         searchView = findViewById(R.id.search_view)
@@ -123,63 +127,30 @@ class MainActivity : AppCompatActivity() {
         btnOnline = findViewById(R.id.btn_online)
         btnOnline.setImageResource(R.drawable.outline_cloud_checked)
         tabName = findViewById<TextView>(R.id.tv_tab_name)
+        isStoragePermissionGranted()
         initControlBottomBar()
         initControlTabBar()
+
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener,
             androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                p0?.let {
-                    getSearchResult(it, searchApi)
-                    tabName.text = "Search"
+                musicService?.let {
+                    val transaction = supportFragmentManager.beginTransaction()
+                    transaction.replace(R.id.fragment_container,RecommendFragment(it,this@MainActivity,p0))
+                    transaction.addToBackStack(null)
+                    transaction.commit()
+                    searchView.clearFocus()
                 }
-                return false
+                return true
             }
+
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
         })
-        searchView.setOnCloseListener {
-            adapter.setData(listSong)
-            musicService?.setPlaylist(listSong)
-            tabName.text = "Top 100"
-            false
-        }
     }
 
-    private fun getSearchResult(text: String, searchApi: SongApi) {
-        val search = text.trim()
-        searchApi.search("artist,song", 20, search).enqueue(object : Callback<SearchResponse> {
-            override fun onResponse(
-                call: Call<SearchResponse>,
-                response: Response<SearchResponse>
-            ) {
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    Log.e("err", body.toString())
-//                    "https://photo-resize-zmp3.zadn.vn/w94_r1x1_jpeg" +
-//                            "/cover/4/9/d/a/49da6a1d6cf13a42e77bc3a945d9dd6b.jpg?fs=MTYzNDY4MzgyOTUwM3x3ZWJWNHw"
-                    body?.let {
-                        listSongSearch = it.data[0].song
-                        val tempList: List<Song> = listSongSearch.map {
-                            Song(
-                                artists_names = it.artist,
-                                title = it.name,
-                                duration = it.duration.toInt(),
-                                thumbnail = BASE_IMG_URL + it.thumb,
-                                id = it.id
-                            )
-                        }
-                        adapter.setData(tempList)
-                        musicService?.setPlaylist(tempList)
-                    }
-                }
-            }
 
-            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
-                showSnack("Error call api")
-            }
-        })
-    }
 
     override fun onStart() {
         super.onStart()
@@ -219,12 +190,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun initRv() {
         val rv = findViewById<RecyclerView>(R.id.rv_top_song)
-        adapter.type = TYPE_ONLINE
         rv.adapter = adapter
         rv.layoutManager =
             LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
         adapter.setItemClick { song ->
             val id = song.id
+            musicService?.setPlaylist(listSong)
             musicService?.setNewSong(id)
             musicService?.playSong()
             val intentService = Intent(this, MusicService::class.java)
@@ -234,7 +205,6 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, PlayingActivity::class.java)
             startActivity(intent)
         }
-        adapter.setFavouriteClick { song -> addFavorite(song) }
         adapter.setDownloadClick { song -> downloadSong(song) }
     }
 
@@ -267,6 +237,7 @@ class MainActivity : AppCompatActivity() {
             if (appFile.canRead()) {
                 showSnack("File Already Exists")
             } else {
+                showSnack("Waiting Download...")
                 val request = DownloadManager.Request(uri)
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 request.setTitle(fileName)
@@ -277,43 +248,6 @@ class MainActivity : AppCompatActivity() {
                     fileName + ".mp3"
                 )
                 val downloadId = downloadManager.enqueue(request)
-            }
-        }
-    }
-
-    private fun addFavorite(song: Song) {
-        val db = SongDatabase.getInstance(applicationContext)
-        val songFavourite =
-            song.thumbnail?.let {
-                SongFavourite(
-                    song.artists_names,
-                    song.duration,
-                    song.id,
-                    it,
-                    song.title
-                )
-            }
-        CoroutineScope(Dispatchers.IO).launch {
-            if (songFavourite != null) {
-                val id = songFavourite.id
-                val isExists = db.getDao().isExist(id)
-                if (isExists) {
-                    db.getDao().deleteById(id)
-                    withContext(Dispatchers.Main) {
-                        showSnack("Remove Favourite List")
-                        listSongFavourite.removeIf {
-                            it.id == id
-                        }
-                        adapter.setListFavourite(listSongFavourite)
-                    }
-                } else {
-                    db.getDao().insert(songFavourite)
-                    withContext(Dispatchers.Main) {
-                        showSnack("Add Favourite List")
-                        listSongFavourite.add(songFavourite)
-                        adapter.setListFavourite(listSongFavourite)
-                    }
-                }
             }
         }
     }
@@ -331,7 +265,7 @@ class MainActivity : AppCompatActivity() {
                     response = songApi.getTopSong()
                     withContext(Dispatchers.Main) {
                         response?.let {
-                            listSong = it.data.song
+                            listSong = it.data.song.toMutableList()
                             adapter.setData(listSong)
                             fetch.visibility = View.GONE
                             progressBar.visibility = View.GONE
@@ -356,7 +290,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        getFavouriteSong()
     }
 
     private fun changeTogglePausePlayUi(value: Int) {
@@ -367,7 +300,7 @@ class MainActivity : AppCompatActivity() {
     private fun changeContent() {
         tvContent.text = musicService?.cursong?.title
         musicService?.let {
-            if (it.isPlayOnline) {
+            if (it.namePlaylist != "OFFLINE") {
                 val imgUrl = it.cursong?.thumbnail
                 Glide.with(this).load(imgUrl).placeholder(R.drawable.ic_baseline_music_note_24)
                     .centerInside().into(ivContent)
@@ -408,127 +341,60 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getFavouriteSong() {
-        val db = SongDatabase.getInstance(applicationContext)
-        CoroutineScope(Dispatchers.IO).launch {
-            listSongFavourite = db.getDao().getAllSong()
-            withContext(Dispatchers.Main) {
-                adapter.setListFavourite(listSongFavourite)
-            }
-        }
-    }
-
-    private fun getLocalSong() {
-        if (isStoragePermissionGranted()) {
-            val collection =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-                } else {
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-                }
-            val projection = arrayOf(
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.ARTIST,
-                MediaStore.Audio.Media.DURATION,
-                MediaStore.Audio.Media.ALBUM_ID
-            )
-            val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
-            val selectionArgs =
-                arrayOf(TimeUnit.MILLISECONDS.convert(2, TimeUnit.MINUTES).toString())
-            val query =
-                contentResolver.query(collection, projection, selection, selectionArgs, null)
-            val retriever = MediaMetadataRetriever()
-            val fetch = findViewById<TextView>(R.id.fetch)
-            val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
-            fetch.visibility = View.VISIBLE
-            progressBar.visibility = View.VISIBLE
-            fetch.text = "fetching"
-            listSongLocal.clear()
-            CoroutineScope(Dispatchers.IO).launch {
-                query?.let { cursor ->
-                    while (cursor.moveToNext()) {
-                        val id = cursor.getLong(0)
-                        val title = cursor.getString(1)
-                        val singer = cursor.getString(2)
-                        val duration = cursor.getInt(3)
-                        val uri =
-                            ContentUris.withAppendedId(
-                                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                                id
-                            )
-                        retriever.setDataSource(applicationContext, uri)
-                        val bitmap = retriever.embeddedPicture ?: byteArrayOf()
-                        val songLocal = Song(
-                            artists_names = singer,
-                            duration = duration / 1000,
-                            id = id.toString(),
-                            title = title,
-                            image = bitmap,
-                            isOffline = true
-                        )
-                        withContext(Dispatchers.Main) {
-                            listSongLocal.add(songLocal)
-                        }
-                    }
-                    cursor.close()
-                }
-                withContext(Dispatchers.Main) {
-                    fetch.visibility = View.GONE
-                    progressBar.visibility = View.GONE
-                    adapter.type = TYPE_OFLINE
-                    adapter.setData(listSongLocal)
-                    musicService?.setPlaylistOffline(listSongLocal)
-                }
-            }
-        }
-    }
+//    private fun getFavouriteSong() {
+//        val db = SongDatabase.getInstance(applicationContext)
+//        CoroutineScope(Dispatchers.IO).launch {
+//            listSongFavourite = db.getDao().getAllSong()
+//            withContext(Dispatchers.Main) {
+//                adapter.setListFavourite(listSongFavourite)
+//            }
+//        }
+//    }
 
     private fun initControlTabBar() {
-
         btnOnline.setOnClickListener {
-            adapter.type = TYPE_ONLINE
             adapter.setData(listSong)
-            musicService?.isPlayOnline = true
             tabName.text = "Top 100"
             btnOnline.setImageResource(R.drawable.outline_cloud_checked)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
         }
         btnFavourite.setOnClickListener {
-            val db = SongDatabase.getInstance(applicationContext)
-            CoroutineScope(Dispatchers.IO).launch {
-                listSongFavourite = db.getDao().getAllSong()
-                withContext(Dispatchers.Main) {
-                    adapter.setListFavourite(listSongFavourite)
-                    val newList: List<Song> = listSongFavourite.map {
-                        Song(
-                            artists_names = it.artists_names,
-                            duration = it.duration,
-                            title = it.title,
-                            id = it.id,
-                            thumbnail = it.thumbnail,
-                        )
-                    }
-                    adapter.type = TYPE_ONLINE
-                    adapter.setData(newList)
-                    musicService?.isPlayOnline = true
-                    tabName.text = "Favourite Song"
-                    btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
-                    btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
-                    btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
-                }
+
+            tabName.text = "Favourite Song"
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
+            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            val transaction = supportFragmentManager.beginTransaction()
+            musicService?.let {
+                transaction.replace(
+                    R.id.fragment_container,
+                    FavouriteFragment(it, this)
+                )
             }
+            transaction.addToBackStack(null)
+            transaction.commit()
+
         }
         btnOffline.setOnClickListener {
-            getLocalSong()
             tabName.text = "Local Storage"
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
+
+            val transaction = supportFragmentManager.beginTransaction()
+            musicService?.let {
+                transaction.replace(
+                    R.id.fragment_container,
+                    BaseFragment(it, this)
+                )
+            }
+            transaction.addToBackStack(null)
+            transaction.commit()
         }
     }
-    private fun showSnack(mess:String){
-        Snackbar.make(findViewById(R.id.root_layout),mess,Snackbar.LENGTH_LONG).show()
+
+    private fun showSnack(mess: String) {
+        Snackbar.make(findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG).show()
     }
 }
