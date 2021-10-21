@@ -104,21 +104,10 @@ class MusicService : Service() {
         }
     }
 
-    fun playRecommend(song: Song) {
-        cursong = song
-        mediaPlayer.stop()
-        val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
-        mediaPlayer = MediaPlayer.create(applicationContext, uri)
-        mediaPlayer.start()
-        sendToActivity(ACTION_CHANGE_SONG)
-        pushNotification(song)
-        mediaPlayer.setOnCompletionListener {
-            nextSong()
-        }
-    }
 
     fun playSong() {
         mediaPlayer.start()
+        pushNotification(cursong!!)
     }
 
 
@@ -240,7 +229,7 @@ class MusicService : Service() {
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
-    private fun pushNotification(song: Song) {
+     fun pushNotification(song: Song) {
         val remoteView = RemoteViews(packageName, R.layout.notify_layout)
         val pending = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
