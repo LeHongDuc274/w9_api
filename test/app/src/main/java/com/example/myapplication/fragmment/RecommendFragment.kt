@@ -3,6 +3,7 @@ package com.example.myapplication.fragmment
 import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -94,6 +95,8 @@ class RecommendFragment(
             musicService.setNewSong(it.id)
             musicService.playSong()
             musicService.sendToActivity(ACTION_CHANGE_SONG)
+            val intentService = Intent(requireActivity(), MusicService::class.java)
+            requireActivity().startService(intentService)
         }
         adapter.setDownloadClick {
             downloadSong(it)

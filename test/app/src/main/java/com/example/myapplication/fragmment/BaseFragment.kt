@@ -2,6 +2,7 @@ package com.example.myapplication.fragmment
 
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
 import android.media.MediaMetadataRetriever
 import android.os.Build
 import android.os.Bundle
@@ -85,6 +86,8 @@ class BaseFragment(
         musicService.setNewSong(it.id)
         musicService.playSong()
         musicService.sendToActivity(ACTION_CHANGE_SONG)
+        val intentService = Intent(requireActivity(), MusicService::class.java)
+        requireActivity().startService(intentService)
     }
 
     private fun setData() {

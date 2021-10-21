@@ -75,6 +75,8 @@ class MusicService : Service() {
         namePlaylist = name
     }
 
+    fun isPlaylistEmpty() = if (playlist.isEmpty()) true else false
+
     fun setNewSong(newId: String) {
         if (namePlaylist != "OFFLINE") {
             cursong = playlist.find {
@@ -107,7 +109,6 @@ class MusicService : Service() {
 
     fun playSong() {
         mediaPlayer.start()
-        pushNotification(cursong!!)
     }
 
 
@@ -181,7 +182,7 @@ class MusicService : Service() {
         }
     }
 
-        fun sendToActivity(action: Int) {
+    fun sendToActivity(action: Int) {
         val intent = Intent()
         intent.action = "fromNotifyToActivity"
         intent.putExtra("fromNotifyToActivity", action)
@@ -229,7 +230,7 @@ class MusicService : Service() {
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
-     fun pushNotification(song: Song) {
+    fun pushNotification(song: Song) {
         val remoteView = RemoteViews(packageName, R.layout.notify_layout)
         val pending = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),

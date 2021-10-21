@@ -68,9 +68,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
     lateinit var tabName: TextView
-    var listSongFavourite = mutableListOf<SongFavourite>()
-    var listSongLocal = mutableListOf<Song>()
-    var listSongSearch = mutableListOf<Song2>()
     val broadcast = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
@@ -271,8 +268,10 @@ class MainActivity : AppCompatActivity() {
                             progressBar.visibility = View.GONE
                             if (!listSong.isEmpty()) {
                                 musicService?.let {
-                                    it.setPlaylist(listSong)
-                                    if (it.cursong == null) it.setNewSong(listSong[0].id)
+                                    if (it.isPlaylistEmpty()) {
+                                        it.setPlaylist(listSong)
+                                        if (it.cursong == null) it.setNewSong(listSong[0].id)
+                                    }
                                 }
                                 changeContent()
                                 changePausePlayBtn()
@@ -340,16 +339,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-//    private fun getFavouriteSong() {
-//        val db = SongDatabase.getInstance(applicationContext)
-//        CoroutineScope(Dispatchers.IO).launch {
-//            listSongFavourite = db.getDao().getAllSong()
-//            withContext(Dispatchers.Main) {
-//                adapter.setListFavourite(listSongFavourite)
-//            }
-//        }
-//    }
 
     private fun initControlTabBar() {
         btnOnline.setOnClickListener {
