@@ -367,7 +367,7 @@ class MainActivity : AppCompatActivity() {
     private fun initControlTabBar() {
         btnMyPlaylist.setOnClickListener {
             val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container,MyPlaylistFragment())
+            transaction.replace(R.id.fragment_container,MyPlaylistFragment(musicService = musicService!!))
             transaction.addToBackStack(null)
             transaction.commit()
         }

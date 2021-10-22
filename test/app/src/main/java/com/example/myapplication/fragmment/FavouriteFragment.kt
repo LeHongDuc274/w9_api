@@ -37,7 +37,8 @@ import java.io.File
 
 class FavouriteFragment(
     val musicService: MusicService,
-    context: Context
+    context: Context,
+    val otherPlaylist: String? = null,
 ) : Fragment() {
 
 
@@ -45,8 +46,8 @@ class FavouriteFragment(
     lateinit var close: ImageView
     lateinit var tvState: TextView
     lateinit var progressBar: ProgressBar
-    lateinit var tvName : TextView
-    lateinit var btnPlay : Button
+    lateinit var tvName: TextView
+    lateinit var btnPlay: Button
     private var adapter = SongAdapter(context)
     var newListFavourite: List<Song> = listOf()
     override fun onCreateView(
@@ -69,7 +70,7 @@ class FavouriteFragment(
         tvName.text = "Favourite Playlit"
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-           if(newListFavourite.isNotEmpty()) {
+            if (newListFavourite.isNotEmpty()) {
                 musicService.setPlaylist(newListFavourite)
                 musicService.setNewSong(newListFavourite[0].id)
                 musicService.playSong()
@@ -162,13 +163,21 @@ class FavouriteFragment(
     }
 
     private fun loadFavouriteSong() {
-        val db = SongDatabase.getInstance(requireActivity().applicationContext)
         progressBar.visibility = View.VISIBLE
         tvState.visibility = View.VISIBLE
         tvState.text = "fetching"
+        if (otherPlaylist == null)
+            getFavouritePlaylist() // other playlist == null _> getFavourite Playlist
+        else getOtherPlaylist(otherPlaylist) // get playlist by playlist name
+
+
+    }
+
+    private fun getFavouritePlaylist() {
+        val db = SongDatabase.getInstance(requireActivity().applicationContext)
         CoroutineScope(Dispatchers.IO).launch {
             val listSongFavourite = db.getDao().getAllSong()
-            if(listSongFavourite.isNotEmpty()) {
+            if (listSongFavourite.isNotEmpty()) {
                 withContext(Dispatchers.Main) {
                     newListFavourite = listSongFavourite.map {
                         Song(
@@ -188,6 +197,32 @@ class FavouriteFragment(
             }
         }
     }
+
+    private fun getOtherPlaylist(otherPlaylist: String) {
+        val db = SongDatabase.getInstance(requireActivity().applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            val listSongCrossRef = db.getDao().getSongOfPlaylist(otherPlaylist)
+            if (listSongCrossRef.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    newListFavourite = listSongCrossRef[0].songs.map {
+                        Song(
+                            artists_names = it.artists_names,
+                            duration = it.duration,
+                            title = it.title,
+                            id = it.id,
+                            thumbnail = it.thumbnail,
+                            favorit = true
+                        )
+                    }
+                    adapter.setData(newListFavourite.toMutableList())
+                    progressBar.visibility = View.GONE
+                    tvState.visibility = View.GONE
+                    btnPlay.isClickable = true
+                }
+            }
+        }
+    }
+
 
     private fun showSnack(mess: String) {
         Snackbar.make(

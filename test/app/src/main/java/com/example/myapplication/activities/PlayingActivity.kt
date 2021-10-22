@@ -193,7 +193,11 @@ class PlayingActivity : AppCompatActivity() {
             loadFragment(RecommendFragment(musicService!!, this))
         }
         ivAddPlaylist.setOnClickListener {
-            loadFragment(MyPlaylistFragment(true))
+            val id = musicService?.cursong?.id
+            id?.let {
+                loadFragment(MyPlaylistFragment(true,id,musicService= musicService!!))
+            }
+
         }
     }
 

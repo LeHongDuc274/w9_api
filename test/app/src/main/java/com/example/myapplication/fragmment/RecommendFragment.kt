@@ -198,6 +198,7 @@ class RecommendFragment(
             loadRecommendSong()
         } else {
             tvState.visibility = View.VISIBLE
+            progressBar.visibility = View.GONE
             tvState.text = "OffLine Music - Not Has Recommend Song"
         }
     }
