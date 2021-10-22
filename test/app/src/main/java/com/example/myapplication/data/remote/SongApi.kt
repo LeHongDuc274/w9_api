@@ -19,10 +19,10 @@ interface SongApi {
     suspend fun getTopSong(): TopSongResponse
 
     @GET("xhr/recommend")
-    suspend fun getRecommend(
+    fun getRecommend(
         @Query("type") type: String = "audio",
         @Query("id") id: String
-    ): RecommendResponses
+    ): Call<RecommendResponses>
 
     // use Call
     @GET("complete")

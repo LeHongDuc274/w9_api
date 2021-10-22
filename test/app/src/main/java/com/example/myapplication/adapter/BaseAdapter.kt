@@ -8,9 +8,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.myapplication.R
-import com.example.myapplication.data.local.SongFavourite
+import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.utils.Contains
 

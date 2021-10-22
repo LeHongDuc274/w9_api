@@ -6,17 +6,18 @@ import android.media.AudioManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
 import android.view.View
 import android.widget.*
 
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.data.local.SongDatabase
-import com.example.myapplication.data.local.SongFavourite
+import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.fragmment.MyPlaylistFragment
 import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
@@ -40,11 +41,10 @@ class PlayingActivity : AppCompatActivity() {
     lateinit var btnShuffle: ImageView
     lateinit var tvProgressChange: TextView
     lateinit var progressBar: SeekBar
-    lateinit var volumBar: SeekBar
     lateinit var tvCurDuration: TextView
     lateinit var ivContent: ImageView
     lateinit var btnPause: FloatingActionButton
-    lateinit var ivVolum: ImageView
+    lateinit var ivAddPlaylist: ImageView
     lateinit var ivAddFragment: ImageView
     lateinit var tvRecommend: TextView
     lateinit var ivFavourite: ImageView
@@ -143,22 +143,15 @@ class PlayingActivity : AppCompatActivity() {
         tvCurDuration = findViewById<TextView>(R.id.tv_current_duration)
         tvDuration = findViewById<TextView>(R.id.tv_duration)
         progressBar = findViewById<SeekBar>(R.id.progress_horizontal)
-        volumBar = findViewById(R.id.volum)
         btnRepeat = findViewById(R.id.btn_repeat)
         btnShuffle = findViewById(R.id.btn_shuffle)
         tvProgressChange = findViewById(R.id.tv_progress_change)
         tvProgressChange.isVisible = false
         ivContent = findViewById(R.id.iv_content)
-        ivVolum = findViewById(R.id.iv_volum)
+        ivAddPlaylist = findViewById(R.id.add_to_playlist)
         ivAddFragment = findViewById(R.id.add_fragment)
         tvRecommend = findViewById(R.id.tv_recommed)
         ivFavourite = findViewById(R.id.iv_favourite)
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        volumBar.max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
-            ivVolum.setImageResource(R.drawable.ic_baseline_volume_off_24)
-        } else ivVolum.setImageResource(R.drawable.ic_baseline_volume_up_24)
-        volumBar.progress = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         listenSeekBarChange()
         updateUiWhenChangeSong()
         // Button
@@ -197,12 +190,19 @@ class PlayingActivity : AppCompatActivity() {
             }
         }
         ivAddFragment.setOnClickListener {
-            musicService?.let {
-                val transaction = supportFragmentManager.beginTransaction()
-                transaction.replace(R.id.fragment_container, RecommendFragment(it, this))
-                transaction.addToBackStack(null)
-                transaction.commit()
-            }
+            loadFragment(RecommendFragment(musicService!!, this))
+        }
+        ivAddPlaylist.setOnClickListener {
+            loadFragment(MyPlaylistFragment(true))
+        }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        musicService?.let {
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container, fragment)
+            transaction.addToBackStack(null)
+            transaction.commit()
         }
     }
 
@@ -216,12 +216,11 @@ class PlayingActivity : AppCompatActivity() {
         else btnShuffle.setImageResource(R.drawable.ic_baseline_shuffle_24)
     }
 
-
     private fun changeTogglePausePlayUi(value: Int) {
         if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
         else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
         musicService?.let {
-            if(it.internetConnected== false && it.namePlaylist !="OFFLINE"){
+            if (it.internetConnected == false && it.namePlaylist != "OFFLINE") {
                 showSnack("No Internet ")
             }
         }
@@ -275,10 +274,12 @@ class PlayingActivity : AppCompatActivity() {
                 if (fromUser) newPos = p1
                 tvProgressChange.text = Contains.durationString(newPos)
             }
+
             override fun onStartTrackingTouch(p0: SeekBar?) {
                 fromUser = true
                 tvProgressChange.isVisible = true
             }
+
             override fun onStopTrackingTouch(p0: SeekBar?) {
                 musicService?.seekTo(newPos)
                 fromUser = false
@@ -300,7 +301,7 @@ class PlayingActivity : AppCompatActivity() {
                 progressBar.max = (curSong.duration)
                 //image change
                 if (curSong.thumbnail != null) {
-                   val imgUrl = curSong.thumbnail
+                    val imgUrl = curSong.thumbnail
                     Glide.with(applicationContext).load(imgUrl).circleCrop().into(ivContent)
                 } else if (curSong.image.isNotEmpty()) {
                     ivContent.setImageBitmap(

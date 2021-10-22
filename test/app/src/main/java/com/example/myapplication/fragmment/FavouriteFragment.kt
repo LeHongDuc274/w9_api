@@ -69,10 +69,12 @@ class FavouriteFragment(
         tvName.text = "Favourite Playlit"
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-            musicService.setPlaylist(newListFavourite)
-            musicService.setNewSong(newListFavourite[0].id)
-            musicService.playSong()
-            musicService.sendToActivity(ACTION_CHANGE_SONG)
+           if(newListFavourite.isNotEmpty()) {
+                musicService.setPlaylist(newListFavourite)
+                musicService.setNewSong(newListFavourite[0].id)
+                musicService.playSong()
+                musicService.sendToActivity(ACTION_CHANGE_SONG)
+            } else showSnack("Favourite list empty")
         }
         close.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
@@ -166,21 +168,23 @@ class FavouriteFragment(
         tvState.text = "fetching"
         CoroutineScope(Dispatchers.IO).launch {
             val listSongFavourite = db.getDao().getAllSong()
-            withContext(Dispatchers.Main) {
-                newListFavourite = listSongFavourite.map {
-                    Song(
-                        artists_names = it.artists_names,
-                        duration = it.duration,
-                        title = it.title,
-                        id = it.id,
-                        thumbnail = it.thumbnail,
-                        favorit = true
-                    )
+            if(listSongFavourite.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    newListFavourite = listSongFavourite.map {
+                        Song(
+                            artists_names = it.artists_names,
+                            duration = it.duration,
+                            title = it.title,
+                            id = it.id,
+                            thumbnail = it.thumbnail,
+                            favorit = true
+                        )
+                    }
+                    adapter.setData(newListFavourite.toMutableList())
+                    progressBar.visibility = View.GONE
+                    tvState.visibility = View.GONE
+                    btnPlay.isClickable = true
                 }
-                adapter.setData(newListFavourite.toMutableList())
-                progressBar.visibility = View.GONE
-                tvState.visibility = View.GONE
-                btnPlay.isClickable = true
             }
         }
     }

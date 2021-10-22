@@ -1,10 +1,11 @@
 package com.example.myapplication.data.local
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
-import com.example.myapplication.data.remote.responses.Song
+import androidx.room.*
+import com.example.myapplication.data.local.models.Playlist
+import com.example.myapplication.data.local.models.SongFavourite
+import com.example.myapplication.data.local.relations.PlaylistWithSong
+import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
+import com.example.myapplication.data.local.relations.SongWithPlaylist
 
 @Dao
 interface SongDao {
@@ -22,5 +23,28 @@ interface SongDao {
 
     @Query(value = "select exists(select * from song_favourite where id = :id)")
     suspend fun isExist(id:String) : Boolean
+
+    @Query("select * from playlist")
+    suspend fun getAllPlaylist(): MutableList<Playlist>
+
+    @Insert
+    suspend fun insertNewPlaylist(playlist: Playlist)
+
+    @Delete
+    suspend fun deletePlaylist(playlist: Playlist)
+
+    @Query(value = "select exists(select * from playlist where playlistName = :playlistName)")
+    suspend fun isPlaylistExits(playlistName : String) : Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSongPlaylistCrossRef(crossRef: SongPlaylistCrossRef)
+
+    @Transaction
+    @Query("SELECT * FROM playlist WHERE playlistName = :playlistName")
+    suspend fun getSongOfPlaylist(playlistName: String): MutableList<PlaylistWithSong>
+
+    @Transaction
+    @Query("SELECT * FROM song_favourite WHERE id = :id")
+    suspend fun getPlaylistOfSong(id: String): MutableList<SongWithPlaylist>
 
 }

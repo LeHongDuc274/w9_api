@@ -1,24 +1,15 @@
 package com.example.myapplication.adapter
 
 import android.content.Context
-import android.graphics.BitmapFactory
-import android.net.Uri
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
-import com.example.myapplication.activities.MainActivity
-import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
-import com.example.myapplication.utils.Contains.TYPE_OFLINE
-import com.example.myapplication.utils.Contains.TYPE_ONLINE
-import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.example.myapplication.utils.Contains.durationString
 
 class SongAdapter(val context: Context) :

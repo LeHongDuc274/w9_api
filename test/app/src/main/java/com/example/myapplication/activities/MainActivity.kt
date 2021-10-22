@@ -8,9 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Environment
 import android.os.IBinder
-import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.*
 import androidx.appcompat.widget.Toolbar
@@ -20,8 +17,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
 import com.example.myapplication.adapter.SongAdapter
-import com.example.myapplication.data.local.SongDatabase
-import com.example.myapplication.data.local.SongFavourite
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.responses.TopSongResponse
@@ -30,30 +25,19 @@ import com.example.myapplication.utils.Contains.ACTION_CANCEL
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.ACTION_PAUSE
 import com.example.myapplication.utils.Contains.ACTION_PLAY
-import com.example.myapplication.utils.Contains.TYPE_ONLINE
 import kotlinx.coroutines.*
 import androidx.core.app.ActivityCompat
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.net.ConnectivityManager
 import android.os.Build
-import android.provider.MediaStore
-import androidx.annotation.RequiresApi
-import com.example.myapplication.data.remote.search.SearchResponse
-import com.example.myapplication.data.remote.search.Song2
 import com.example.myapplication.fragmment.BaseFragment
 import com.example.myapplication.fragmment.FavouriteFragment
+import com.example.myapplication.fragmment.MyPlaylistFragment
 import com.example.myapplication.fragmment.RecommendFragment
-import com.example.myapplication.utils.Contains.BASE_IMG_URL
-import com.example.myapplication.utils.Contains.TYPE_OFLINE
 import com.example.myapplication.utils.Contains.checkNetWorkAvailable
 import com.google.android.material.snackbar.Snackbar
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -69,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnFavourite: ImageButton
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
+    lateinit var btnMyPlaylist : ImageButton
     lateinit var tabName: TextView
     var songApi: SongApi
     var searchApi: SongApi
@@ -132,6 +117,7 @@ class MainActivity : AppCompatActivity() {
         initRv()
         bindService()
         getTopSong(songApi)
+        registerReceiver()
     }
 
     private fun initViews(searchApi: SongApi) {
@@ -144,6 +130,7 @@ class MainActivity : AppCompatActivity() {
         btnOffline = findViewById(R.id.btn_offline)
         btnOnline = findViewById(R.id.btn_online)
         btnOnline.setImageResource(R.drawable.outline_cloud_checked)
+        btnMyPlaylist = findViewById(R.id.btn_playlist)
         tabName = findViewById<TextView>(R.id.tv_tab_name)
         isStoragePermissionGranted()
         initControlBottomBar()
@@ -173,7 +160,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        registerReceiver()
     }
 
     override fun onDestroy() {
@@ -379,6 +365,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initControlTabBar() {
+        btnMyPlaylist.setOnClickListener {
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container,MyPlaylistFragment())
+            transaction.addToBackStack(null)
+            transaction.commit()
+        }
+
         btnOnline.setOnClickListener {
             adapter.setData(listSong)
             tabName.text = "Top 100"

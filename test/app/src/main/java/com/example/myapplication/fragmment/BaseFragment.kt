@@ -27,6 +27,7 @@ import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,10 +66,12 @@ class BaseFragment(
         btnPlay = view.findViewById(R.id.play_playlist)
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-            musicService.setPlaylist(listSongLocal, "OFFLINE")
-            musicService.setNewSong(listSongLocal[0].id)
-            musicService.playSong()
-            musicService.sendToActivity(ACTION_CHANGE_SONG)
+         if(listSongLocal.isNotEmpty()){
+                musicService.setPlaylist(listSongLocal, "OFFLINE")
+                musicService.setNewSong(listSongLocal[0].id)
+                musicService.playSong()
+                musicService.sendToActivity(ACTION_CHANGE_SONG)
+            } else showSnack("Local song blank")
         }
         tvName.text = "Local Playlist"
         close = view.findViewById(R.id.close)
@@ -156,5 +159,12 @@ class BaseFragment(
                 }
             }
         }
+    }
+    private fun showSnack(mess: String) {
+        Snackbar.make(
+            requireActivity().findViewById(R.id.root_layout),
+            mess,
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 }

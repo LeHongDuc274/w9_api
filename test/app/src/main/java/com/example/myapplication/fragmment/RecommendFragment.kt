@@ -60,7 +60,10 @@ class RecommendFragment(
 
         if (query == null) {
             setRecommendSong()
-            tvName.text = "Playlist Recommend của bài hát :" + musicService.cursong!!.title
+            musicService.cursong?.let {
+                tvName.text = "Playlist Recommend của bài hát :" +it.title
+            }
+
         }
         else {
             getSearchResult(query)
@@ -82,10 +85,12 @@ class RecommendFragment(
         btnPlay = view.findViewById(R.id.play_playlist)
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-            musicService.setPlaylist(listSong)
-            musicService.setNewSong(listSong[0].id)
-            musicService.playSong()
-            musicService.sendToActivity(ACTION_CHANGE_SONG)
+            if(listSong.isNotEmpty()){
+                musicService.setPlaylist(listSong)
+                musicService.setNewSong(listSong[0].id)
+                musicService.playSong()
+                musicService.sendToActivity(ACTION_CHANGE_SONG)
+            } else showSnack("List empty")
         }
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter
@@ -199,36 +204,33 @@ class RecommendFragment(
 
     private fun loadRecommendSong() {
         val songId = musicService.cursong?.id
-        Log.e("tag", songId!!)
         progressBar.visibility = View.VISIBLE
         tvState.visibility = View.VISIBLE
         tvState.text = "fetching"
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                withTimeout(3000) {
-                    val recommendResponses = SongApi.create().getRecommend("audio", songId)
-                    withContext(Dispatchers.Main) {
-                        listSong = recommendResponses.data.items.toMutableList()
+        val recommendResponses = SongApi.create().getRecommend("audio", songId!!)
+        recommendResponses.enqueue(object:Callback<RecommendResponses>{
+            override fun onResponse(
+                call: Call<RecommendResponses>,
+                response: Response<RecommendResponses>
+            ) {
+                if (response.isSuccessful){
+                    val body = response.body()
+                    body?.let {
+                        listSong = it.data.items.toMutableList()
                         listSong.let { adapter.setData(it.toMutableList()) }
                         progressBar.visibility = View.GONE
                         tvState.visibility = View.GONE
                     }
                 }
-            } catch (e: TimeoutCancellationException) {
-                withContext(Dispatchers.Main) {
-                    tvState.visibility = View.GONE
-                    tvState.text = "Retry"
-                    tvState.setOnClickListener {
-                        loadRecommendSong()
-                    }
-                }
             }
-        }
+            override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
+                showSnack("Error call API")
+            }
+        })
     }
 
     private fun showSnack(mess: String) {
-        Snackbar.make(requireActivity().findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG)
+        Snackbar.make(requireActivity().findViewById(R.id.root_layout), mess, Snackbar.LENGTH_SHORT)
             .show()
     }
 }
