@@ -82,7 +82,7 @@ class FavouriteFragment(
                 musicService.sendToActivity(ACTION_CHANGE_SONG)
                 val intentService = Intent(requireActivity(), MusicService::class.java)
                 requireActivity().startService(intentService)
-            } else showSnack("Favourite list empty")
+            } else showSnack("list empty")
         }
         close.setOnClickListener {
             super.requireActivity().onBackPressed()
@@ -199,24 +199,25 @@ class FavouriteFragment(
         val db = SongDatabase.getInstance(requireActivity().applicationContext)
         CoroutineScope(Dispatchers.IO).launch {
             val listSongFavourite = db.getDao().getAllSong()
-            if (listSongFavourite.isNotEmpty()) {
+
                 withContext(Dispatchers.Main) {
-                    newListFavourite = listSongFavourite.map {
-                        Song(
-                            artists_names = it.artists_names,
-                            duration = it.duration,
-                            title = it.title,
-                            id = it.id,
-                            thumbnail = it.thumbnail,
-                            favorit = true
-                        )
-                    }
-                    adapter.setData(newListFavourite.toMutableList())
+                    if (listSongFavourite.isNotEmpty()) {
+                        newListFavourite = listSongFavourite.map {
+                            Song(
+                                artists_names = it.artists_names,
+                                duration = it.duration,
+                                title = it.title,
+                                id = it.id,
+                                thumbnail = it.thumbnail,
+                                favorit = true
+                            )
+                        }
+                        adapter.setData(newListFavourite.toMutableList())
+                    } else showSnack("list empty")
                     progressBar.visibility = View.GONE
                     tvState.visibility = View.GONE
                     btnPlay.isClickable = true
                 }
-            }
         }
     }
 

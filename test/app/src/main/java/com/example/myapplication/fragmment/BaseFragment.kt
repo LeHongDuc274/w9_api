@@ -41,7 +41,6 @@ class BaseFragment(
 ) :
     Fragment() {
 
-
     lateinit var rvrecommnend: RecyclerView
     lateinit var close: ImageView
     lateinit var tvState: TextView
