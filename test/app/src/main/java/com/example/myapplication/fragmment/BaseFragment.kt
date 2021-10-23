@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -76,7 +77,7 @@ class BaseFragment(
         tvName.text = "Local Playlist"
         close = view.findViewById(R.id.close)
         close.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            super.requireActivity().onBackPressed()
         }
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter

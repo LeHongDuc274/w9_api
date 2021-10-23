@@ -46,8 +46,8 @@ class RecommendFragment(
     lateinit var close: ImageView
     lateinit var tvState: TextView
     lateinit var progressBar: ProgressBar
-    lateinit var tvName : TextView
-    lateinit var btnPlay : Button
+    lateinit var tvName: TextView
+    lateinit var btnPlay: Button
     private var adapter = SongAdapter(context)
     private var listSong = mutableListOf<Song>()
     override fun onCreateView(
@@ -61,11 +61,10 @@ class RecommendFragment(
         if (query == null) {
             setRecommendSong()
             musicService.cursong?.let {
-                tvName.text = "Playlist Recommend của bài hát :" +it.title
+                tvName.text = "Playlist Recommend của bài hát :" + it.title
             }
 
-        }
-        else {
+        } else {
             getSearchResult(query)
             tvName.text = "Playlist Kết quả tìm kiếm của :  " + query + " key"
         }
@@ -80,12 +79,12 @@ class RecommendFragment(
         tvName.isSelected = true
         close = view.findViewById(R.id.close)
         close.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
+            super.requireActivity().onBackPressed()
         }
         btnPlay = view.findViewById(R.id.play_playlist)
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
-            if(listSong.isNotEmpty()){
+            if (listSong.isNotEmpty()) {
                 musicService.setPlaylist(listSong)
                 musicService.setNewSong(listSong[0].id)
                 musicService.playSong()
@@ -194,7 +193,7 @@ class RecommendFragment(
 
     private fun setRecommendSong() {
         val isOffline = musicService.cursong?.isOffline ?: true
-        if (!isOffline ) {
+        if (!isOffline) {
             loadRecommendSong()
         } else {
             tvState.visibility = View.VISIBLE
@@ -209,12 +208,12 @@ class RecommendFragment(
         tvState.visibility = View.VISIBLE
         tvState.text = "fetching"
         val recommendResponses = SongApi.create().getRecommend("audio", songId!!)
-        recommendResponses.enqueue(object:Callback<RecommendResponses>{
+        recommendResponses.enqueue(object : Callback<RecommendResponses> {
             override fun onResponse(
                 call: Call<RecommendResponses>,
                 response: Response<RecommendResponses>
             ) {
-                if (response.isSuccessful){
+                if (response.isSuccessful) {
                     val body = response.body()
                     body?.let {
                         listSong = it.data.items.toMutableList()
@@ -224,6 +223,7 @@ class RecommendFragment(
                     }
                 }
             }
+
             override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
                 showSnack("Error call API")
             }

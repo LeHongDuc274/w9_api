@@ -203,7 +203,7 @@ class PlayingActivity : AppCompatActivity() {
     private fun loadFragment(fragment: Fragment) {
         musicService?.let {
             val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
+            transaction.add(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }

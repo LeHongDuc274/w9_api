@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background_fragment"
+    tools:context=".fragmment.HomeFragment">
+
+
+    <ImageView
+        android:id="@+id/close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:src="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_recommed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Top Song 100"
+        android:textColor="@color/purple_700"
+        android:textSize="17sp"
+        android:singleLine="true"
+        android:background="@drawable/background_textview"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:ellipsize="marquee"
+        app:layout_constraintEnd_toEndOf="@+id/close"
+        app:layout_constraintStart_toStartOf="@+id/close"
+        app:layout_constraintTop_toBottomOf="@+id/close" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/play_playlist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/purple_200"
+        android:text="Phát Playlist"
+        android:textSize="12sp"
+        app:cornerRadius="8dp"
+        app:layout_constraintEnd_toEndOf="@+id/tv_recommed"
+        app:layout_constraintStart_toStartOf="@+id/tv_recommed"
+        app:layout_constraintTop_toBottomOf="@+id/tv_recommed" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_recommed"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/play_playlist" />
+
+    <ProgressBar
+        android:id="@+id/progress_circular"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:indeterminateTint="@color/purple_700"
+        app:layout_constraintBottom_toBottomOf="@+id/rv_recommed"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/rv_recommed"
+        app:layout_constraintTop_toBottomOf="@+id/tv_recommed" />
+
+    <TextView
+        android:id="@+id/tv_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="fetching"
+        android:textColor="@color/purple_700"
+        android:textStyle="italic"
+        app:layout_constraintEnd_toEndOf="@+id/progress_circular"
+        app:layout_constraintStart_toStartOf="@+id/progress_circular"
+        app:layout_constraintTop_toBottomOf="@+id/progress_circular" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

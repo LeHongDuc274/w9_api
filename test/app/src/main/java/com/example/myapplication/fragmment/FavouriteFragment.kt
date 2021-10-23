@@ -19,6 +19,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
+import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -82,7 +83,7 @@ class FavouriteFragment(
             } else showSnack("Favourite list empty")
         }
         close.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            super.requireActivity().onBackPressed()
         }
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter

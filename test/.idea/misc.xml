@@ -9,8 +9,10 @@
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_keyboard_arrow_down_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_keyboard_arrow_up_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_music_note_24.xml" value="0.14635416666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_music_note_color.xml" value="0.20052083333333334" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_24.xml" value="0.11979166666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_500.xml" value="0.20104166666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_checked.xml" value="0.20052083333333334" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_repeat_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_shuffle_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_heart_checked.xml" value="0.14635416666666667" />
@@ -26,6 +28,7 @@
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/activity_playing.xml" value="0.24010416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_base.xml" value="0.4" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_favourite.xml" value="0.19322916666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_home.xml" value="0.24010416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_my_playlist.xml" value="0.536" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_recommend.xml" value="0.4" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/item_playlist.xml" value="0.19375" />

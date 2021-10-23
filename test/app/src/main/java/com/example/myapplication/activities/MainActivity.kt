@@ -31,19 +31,17 @@ import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.Build
-import com.example.myapplication.fragmment.BaseFragment
-import com.example.myapplication.fragmment.FavouriteFragment
-import com.example.myapplication.fragmment.MyPlaylistFragment
-import com.example.myapplication.fragmment.RecommendFragment
+import android.util.Log
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import com.example.myapplication.fragmment.*
 import com.example.myapplication.utils.Contains.checkNetWorkAvailable
 import com.google.android.material.snackbar.Snackbar
 import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
-    private var response: TopSongResponse? = null
     private var listSong = mutableListOf<Song>()
-    private var adapter = SongAdapter(this)
     private var musicService: MusicService? = null
     private var isBound = false
     lateinit var tvContent: TextView
@@ -85,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
                 if (it.action == ConnectivityManager.CONNECTIVITY_ACTION) {
-                    getTopSong(songApi)
+                   // getTopSong(songApi)
                     musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
                 }
             }
@@ -114,9 +112,7 @@ class MainActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         initViews(searchApi)
-        initRv()
         bindService()
-        getTopSong(songApi)
         registerReceiver()
     }
 
@@ -141,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 musicService?.let {
                     val transaction = supportFragmentManager.beginTransaction()
-                    transaction.replace(
+                    transaction.add(
                         R.id.fragment_container,
                         RecommendFragment(it, this@MainActivity, p0)
                     )
@@ -151,15 +147,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 return true
             }
-
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
         })
-    }
-
-    override fun onStart() {
-        super.onStart()
     }
 
     override fun onDestroy() {
@@ -178,40 +169,17 @@ class MainActivity : AppCompatActivity() {
             val binder = p1 as MusicService.Mybind
             musicService = binder.getInstance()
             musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
+            changeContent()
+            changePausePlayBtn()
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.replace(R.id.fragment_container,HomeFragment(musicService!!))
+            transaction.commit()
             isBound = true
         }
 
         override fun onServiceDisconnected(p0: ComponentName?) {
             isBound = false
         }
-    }
-
-    private fun changePausePlayBtn() {
-        musicService?.let {
-            if (it.isPlaying()) {
-                btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
-            } else btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
-        }
-    }
-
-    private fun initRv() {
-        val rv = findViewById<RecyclerView>(R.id.rv_top_song)
-        rv.adapter = adapter
-        rv.layoutManager =
-            LinearLayoutManager(applicationContext, LinearLayoutManager.VERTICAL, false)
-        adapter.setItemClick { song ->
-            val id = song.id
-            musicService?.setPlaylist(listSong)
-            musicService?.setNewSong(id)
-            musicService?.playSong()
-            val intentService = Intent(this, MusicService::class.java)
-            startService(intentService)
-            changeContent()
-            changeTogglePausePlayUi(ACTION_PLAY)
-            val intent = Intent(this, PlayingActivity::class.java)
-            startActivity(intent)
-        }
-        adapter.setDownloadClick { song -> downloadSong(song) }
     }
 
     fun isStoragePermissionGranted(): Boolean {
@@ -232,83 +200,15 @@ class MainActivity : AppCompatActivity() {
             true
         }
     }
-
-    private fun downloadSong(song: Song) {
-        if (isStoragePermissionGranted()) {
-
-            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
-            val fileName = song.title
-            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
-            if (appFile.canRead()) {
-                showSnack("File Already Exists")
-            } else {
-                showSnack("Waiting Download...")
-                val request = DownloadManager.Request(uri)
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                request.setTitle(fileName)
-                request.setDescription("downloading..")
-                request.setAllowedOverRoaming(true)
-                request.setDestinationInExternalPublicDir(
-                    (Environment.DIRECTORY_DOWNLOADS),
-                    fileName + ".mp3"
-                )
-                val downloadId = downloadManager.enqueue(request)
-            }
+    private fun changePausePlayBtn() {
+        musicService?.let {
+            if (it.isPlaying()) {
+                btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
+            } else btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
         }
     }
 
-    private fun getTopSong(songApi: SongApi) {
-        val fetch = findViewById<TextView>(R.id.fetch)
-        val progressBar = findViewById<ProgressBar>(R.id.progress_circular)
-        if (checkNetWorkAvailable(this)) {
-            fetch.visibility = View.VISIBLE
-            progressBar.visibility = View.VISIBLE
-            fetch.text = "fetching"
 
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    withTimeout(3000) {
-                        try {
-                            response = songApi.getTopSong()
-                        } catch (e:Exception){
-                            e.printStackTrace()
-                        }
-                        withContext(Dispatchers.Main) {
-                            response?.let {
-                                listSong = it.data.song.toMutableList()
-                                adapter.setData(listSong)
-                                fetch.visibility = View.GONE
-                                progressBar.visibility = View.GONE
-                                if (!listSong.isEmpty()) {
-                                    musicService?.let {
-                                        if (it.isPlaylistEmpty()) {
-                                            it.setPlaylist(listSong)
-                                            if (it.cursong == null) it.setNewSong(listSong[0].id)
-                                        }
-                                    }
-                                    changeContent()
-                                    changePausePlayBtn()
-                                }
-                            }
-                        }
-                    }
-                } catch (e: TimeoutCancellationException) {
-                    withContext(Dispatchers.Main) {
-                        progressBar.visibility = View.GONE
-                        fetch.text = "Retry"
-                        fetch.setOnClickListener {
-                            getTopSong(songApi)
-                        }
-                    }
-                }
-            }
-        } else {
-            fetch.visibility = View.GONE
-            progressBar.visibility = View.GONE
-            showSnack("No Internet")
-        }
-    }
 
     private fun changeTogglePausePlayUi(value: Int) {
         if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
@@ -367,23 +267,26 @@ class MainActivity : AppCompatActivity() {
     private fun initControlTabBar() {
         btnMyPlaylist.setOnClickListener {
             val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container,MyPlaylistFragment(musicService = musicService!!))
+            transaction.add(R.id.fragment_container,MyPlaylistFragment(musicService = musicService!!))
             transaction.addToBackStack(null)
             transaction.commit()
+            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_checked)
         }
 
         btnOnline.setOnClickListener {
-            adapter.setData(listSong)
-            tabName.text = "Top 100"
+            supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
             btnOnline.setImageResource(R.drawable.outline_cloud_checked)
-
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
         }
         btnFavourite.setOnClickListener {
-
-            tabName.text = "Favourite Song"
             val transaction = supportFragmentManager.beginTransaction()
             musicService?.let {
-                transaction.replace(
+                transaction.add(
                     R.id.fragment_container,
                     FavouriteFragment(it, this)
                 )
@@ -391,21 +294,40 @@ class MainActivity : AppCompatActivity() {
             transaction.addToBackStack(null)
             transaction.commit()
 
+            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
+
         }
         btnOffline.setOnClickListener {
-            tabName.text = "Local Storage"
             val transaction = supportFragmentManager.beginTransaction()
             musicService?.let {
-                transaction.replace(
+                transaction.add(
                     R.id.fragment_container,
                     BaseFragment(it, this)
                 )
             }
             transaction.addToBackStack(null)
             transaction.commit()
+            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
+            btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
         }
     }
 
+    override fun onBackPressed() {
+
+        if(supportFragmentManager.backStackEntryCount > 0){
+            supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
+            btnOnline.setImageResource(R.drawable.outline_cloud_checked)
+            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
+            btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
+        } else super.onBackPressed()
+
+    }
     private fun showSnack(mess: String) {
         Snackbar.make(findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG).show()
     }

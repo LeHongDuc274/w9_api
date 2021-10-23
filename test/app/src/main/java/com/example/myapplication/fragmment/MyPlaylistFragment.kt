@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
+import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -76,7 +77,7 @@ class MyPlaylistFragment(
             createNewPlaylist()
         }
         btn_close.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            super.requireActivity().onBackPressed()
         }
     }
 
@@ -92,7 +93,7 @@ class MyPlaylistFragment(
 
     private fun showPlaylist(playlist: Playlist) {
         val transaction = requireActivity().supportFragmentManager.beginTransaction()
-        transaction.replace(
+        transaction.add(
             R.id.fragment_container,
             FavouriteFragment(musicService = musicService, requireActivity(), playlist.playlistName)
         )
