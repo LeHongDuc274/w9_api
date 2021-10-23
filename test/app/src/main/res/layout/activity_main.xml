@@ -90,7 +90,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@color/white_two"
-            android:src="@drawable/outline_cloud_done_24" />
+            android:src="@drawable/outline_cloud_checked" />
 
         <ImageButton
             android:id="@+id/btn_offline"

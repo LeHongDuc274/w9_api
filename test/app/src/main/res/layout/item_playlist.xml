@@ -10,7 +10,7 @@
         android:id="@+id/tv_playlist_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#CCD3C6"
+        android:background="@drawable/background_fragment"
         android:fontFamily="@font/lora_italic_wght"
         android:gravity="center"
         android:padding="20dp"

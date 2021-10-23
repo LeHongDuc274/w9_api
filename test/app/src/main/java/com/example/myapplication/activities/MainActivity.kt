@@ -376,15 +376,11 @@ class MainActivity : AppCompatActivity() {
             adapter.setData(listSong)
             tabName.text = "Top 100"
             btnOnline.setImageResource(R.drawable.outline_cloud_checked)
-            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
-            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
+
         }
         btnFavourite.setOnClickListener {
 
             tabName.text = "Favourite Song"
-            btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
-            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
-            btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
             val transaction = supportFragmentManager.beginTransaction()
             musicService?.let {
                 transaction.replace(
@@ -398,10 +394,6 @@ class MainActivity : AppCompatActivity() {
         }
         btnOffline.setOnClickListener {
             tabName.text = "Local Storage"
-            btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
-            btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
-            btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
-
             val transaction = supportFragmentManager.beginTransaction()
             musicService?.let {
                 transaction.replace(

@@ -62,12 +62,16 @@ class FavouriteFragment(
     }
 
     private fun initRv(view: View) {
+
         tvState = view.findViewById(R.id.tv_state)
         progressBar = view.findViewById(R.id.progress_circular)
         tvName = view.findViewById(R.id.tv_recommed)
         btnPlay = view.findViewById(R.id.play_playlist)
         close = view.findViewById(R.id.close)
         tvName.text = "Favourite Playlit"
+        if(otherPlaylist!=null) {
+            tvName.text =  "${otherPlaylist} Playlist"
+        }
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
             if (newListFavourite.isNotEmpty()) {
