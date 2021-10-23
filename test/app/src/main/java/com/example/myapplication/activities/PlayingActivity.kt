@@ -14,8 +14,11 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import com.example.myapplication.R
+import com.example.myapplication.adapter.SongAdapter
 import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.local.models.SongFavourite
+import com.example.myapplication.data.remote.SongApi
+import com.example.myapplication.data.remote.info.Infor
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.fragmment.MyPlaylistFragment
 import com.example.myapplication.fragmment.RecommendFragment
@@ -28,6 +31,9 @@ import com.example.myapplication.utils.Contains.ACTION_PLAY
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class PlayingActivity : AppCompatActivity() {
     private var musicService: MusicService? = null
@@ -95,6 +101,36 @@ class PlayingActivity : AppCompatActivity() {
         setContentView(R.layout.activity_playing)
         bindService()
         initViews()
+        //getInfoSong()
+    }
+
+    private fun getInfoSong() {
+        val tvInfor = findViewById<TextView>(R.id.tv_infor)
+        val inforApi = SongApi.create()
+        val infor = inforApi.getInfo("audio",musicService!!.cursong!!.id).enqueue(
+            object :Callback<Infor>{
+                override fun onResponse(call: Call<Infor>, response: Response<Infor>) {
+                    if(response.isSuccessful){
+                        val body = response.body()
+                        body?.let {
+                            val listGenre = body.data.genres
+                            if(listGenre.isNotEmpty()){
+                                var text = ""
+                                listGenre.forEach {
+                                    text =  text +" " + it.name
+                                }
+                                tvInfor.text ="<$text>"
+                            }
+                        }
+                    }
+                }
+                override fun onFailure(call: Call<Infor>, t: Throwable) {
+                    tvInfor.text = " UNKNOWN"
+                }
+
+            }
+        )
+
     }
 
     override fun onStart() {
@@ -122,6 +158,9 @@ class PlayingActivity : AppCompatActivity() {
                 if (it.isPlaying()) changeTogglePausePlayUi(ACTION_PLAY) else changeTogglePausePlayUi(
                     ACTION_PAUSE
                 )
+                if(it.cursong!=null && it.cursong!!.isOffline == false){
+                    getInfoSong()
+                }
             }
         }
 

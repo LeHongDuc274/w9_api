@@ -1,5 +1,6 @@
 package com.example.myapplication.data.remote
 
+import com.example.myapplication.data.remote.info.Infor
 import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.TopSongResponse
 import com.example.myapplication.data.remote.search.SearchResponse
@@ -32,6 +33,11 @@ interface SongApi {
         @Query("query") query: String
     ): Call<SearchResponse>
 
+    @GET(value ="xhr/media/get-info" )
+    fun getInfo(
+        @Query("type") type: String,
+        @Query("id") id:String
+    ) : Call<Infor>
     companion object {
         fun create(): SongApi {
             return Retrofit.Builder()
