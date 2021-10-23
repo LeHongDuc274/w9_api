@@ -5,9 +5,10 @@ import androidx.room.Junction
 import androidx.room.Relation
 import com.example.myapplication.data.local.models.Playlist
 import com.example.myapplication.data.local.models.SongFavourite
+import com.example.myapplication.data.local.models.SongInPlaylist
 
 data class SongWithPlaylist(
-    @Embedded val song : SongFavourite,
+    @Embedded val song : SongInPlaylist,
     @Relation(
         parentColumn = "id",
         entityColumn = "playlistName",

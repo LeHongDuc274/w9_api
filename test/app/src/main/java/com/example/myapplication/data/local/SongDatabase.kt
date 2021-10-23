@@ -6,10 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.myapplication.data.local.models.Playlist
 import com.example.myapplication.data.local.models.SongFavourite
+import com.example.myapplication.data.local.models.SongInPlaylist
 import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
 
 @Database(
-    entities = [SongFavourite::class, Playlist::class, SongPlaylistCrossRef::class],
+    entities = [SongFavourite::class, Playlist::class, SongPlaylistCrossRef::class,SongInPlaylist::class],
     version = 1
 )
 abstract class SongDatabase : RoomDatabase() {

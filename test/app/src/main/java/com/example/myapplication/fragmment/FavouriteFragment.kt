@@ -95,7 +95,22 @@ class FavouriteFragment(
             downloadSong(it)
         }
         adapter.setFavouriteClick {
-            removeFavourite(it)
+            if (otherPlaylist == null) removeFavourite(it)
+            else removeSongInplaylist(it)
+        }
+    }
+
+    private fun removeSongInplaylist(it: Song) {
+        val db = SongDatabase.getInstance(requireActivity().applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            val id = it.id
+            val isExistCrossRef = db.getDao().isExistCrossRef(id,otherPlaylist!!)
+            if(isExistCrossRef){
+                db.getDao().deleteCrossRef(id,otherPlaylist)
+            }
+            withContext(Dispatchers.Main) {
+                showSnack("Remove from ${otherPlaylist} playlist")
+            }
         }
     }
 
@@ -201,10 +216,10 @@ class FavouriteFragment(
     private fun getOtherPlaylist(otherPlaylist: String) {
         val db = SongDatabase.getInstance(requireActivity().applicationContext)
         CoroutineScope(Dispatchers.IO).launch {
-            val listSongCrossRef = db.getDao().getSongOfPlaylist(otherPlaylist)
-            if (listSongCrossRef.isNotEmpty()) {
+            val listSongCrossRef = db.getDao().getSongOfPlaylist(otherPlaylist) //otherPlaylist
+            if (listSongCrossRef != null) {
                 withContext(Dispatchers.Main) {
-                    newListFavourite = listSongCrossRef[0].songs.map {
+                    newListFavourite = listSongCrossRef.songs.map {
                         Song(
                             artists_names = it.artists_names,
                             duration = it.duration,
@@ -214,6 +229,7 @@ class FavouriteFragment(
                             favorit = true
                         )
                     }
+                    Log.e("tag", listSongCrossRef.toString())
                     adapter.setData(newListFavourite.toMutableList())
                     progressBar.visibility = View.GONE
                     tvState.visibility = View.GONE
@@ -222,7 +238,6 @@ class FavouriteFragment(
             }
         }
     }
-
 
     private fun showSnack(mess: String) {
         Snackbar.make(

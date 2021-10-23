@@ -197,7 +197,6 @@ class PlayingActivity : AppCompatActivity() {
             id?.let {
                 loadFragment(MyPlaylistFragment(true,id,musicService= musicService!!))
             }
-
         }
     }
 

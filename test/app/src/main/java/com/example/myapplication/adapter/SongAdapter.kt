@@ -52,7 +52,9 @@ class SongAdapter(val context: Context) :
         holder.itemView.setOnClickListener { itemClick?.invoke(listSongs[position]) }
         ivFavourite.setOnClickListener {
             favouriteClick?.invoke(listSongs[position])
-            ivFavourite.visibility = View.GONE
+//            ivFavourite.visibility = View.GONE
+            listSongs.removeAt(position)
+            notifyDataSetChanged()
         }
         ivDownLoad.setOnClickListener { downloadClick?.invoke(listSongs[position]) }
     }

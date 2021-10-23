@@ -17,6 +17,7 @@ import com.example.myapplication.data.local.SongDao
 import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.local.models.Playlist
 import com.example.myapplication.data.local.models.SongFavourite
+import com.example.myapplication.data.local.models.SongInPlaylist
 import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
 import com.example.myapplication.service.MusicService
 import kotlinx.coroutines.*
@@ -100,10 +101,19 @@ class MyPlaylistFragment(
     }
 
     private fun addSongtoPlaylist(playlist: Playlist) {
-        if (id != null) {
-            val crossRef = SongPlaylistCrossRef(playlist.playlistName, id)
+        val song = musicService.cursong!!
+        if (musicService.cursong != null) {
+            val crossRef = SongPlaylistCrossRef(playlist.playlistName, id!!)
+            val songInPlaylist = SongInPlaylist(
+                artists_names = song.artists_names,
+                duration = song.duration,
+                id = song.id,
+                thumbnail = song.thumbnail,
+                title = song.title
+            )
             CoroutineScope(Dispatchers.IO).launch {
                 db.insertSongPlaylistCrossRef(crossRef)
+                db.insertSongInPlaylist(songInPlaylist)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         requireActivity(),
