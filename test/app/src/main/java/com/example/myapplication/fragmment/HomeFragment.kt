@@ -104,6 +104,8 @@ class HomeFragment(val musicService: MusicService) : Fragment() {
                 musicService.setNewSong(listSong[0].id)
                 musicService.playSong()
                 musicService.sendToActivity(ACTION_CHANGE_SONG)
+                val intentService = Intent(requireActivity(), MusicService::class.java)
+                requireActivity().startService(intentService)
             } else showSnack("List empty")
         }
         adapter.setItemClick { song ->

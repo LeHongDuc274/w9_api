@@ -72,6 +72,8 @@ class BaseFragment(
                 musicService.setNewSong(listSongLocal[0].id)
                 musicService.playSong()
                 musicService.sendToActivity(ACTION_CHANGE_SONG)
+             val intentService = Intent(requireActivity(), MusicService::class.java)
+             requireActivity().startService(intentService)
             } else showSnack("Local song blank")
         }
         tvName.text = "Local Playlist"

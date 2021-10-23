@@ -1,6 +1,7 @@
 package com.example.myapplication.activities
 
 import android.Manifest
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.*
 import android.net.Uri
@@ -325,7 +326,16 @@ class MainActivity : AppCompatActivity() {
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
             btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
-        } else super.onBackPressed()
+        } else{
+            val dialog = AlertDialog.Builder(this).setTitle("Exit App ?")
+                .setMessage("Do you want exit app @@ ")
+                .setNegativeButton("No",null)
+                .setPositiveButton("Yes",{_,_ ->
+                    finish()
+                })
+                .show()
+        }
+           // super.onBackPressed()
 
     }
     private fun showSnack(mess: String) {
