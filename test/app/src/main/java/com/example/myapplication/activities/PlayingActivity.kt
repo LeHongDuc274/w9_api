@@ -106,6 +106,7 @@ class PlayingActivity : AppCompatActivity() {
 
     private fun getInfoSong() {
         val tvInfor = findViewById<TextView>(R.id.tv_infor)
+        tvInfor.visibility = View.INVISIBLE
         val inforApi = SongApi.create()
         val infor = inforApi.getInfo("audio",musicService!!.cursong!!.id).enqueue(
             object :Callback<Infor>{
@@ -120,6 +121,7 @@ class PlayingActivity : AppCompatActivity() {
                                     text =  text +" " + it.name
                                 }
                                 tvInfor.text ="<$text>"
+                                tvInfor.visibility = View.VISIBLE
                             }
                         }
                     }
@@ -158,9 +160,7 @@ class PlayingActivity : AppCompatActivity() {
                 if (it.isPlaying()) changeTogglePausePlayUi(ACTION_PLAY) else changeTogglePausePlayUi(
                     ACTION_PAUSE
                 )
-                if(it.cursong!=null && it.cursong!!.isOffline == false){
-                    getInfoSong()
-                }
+
             }
         }
 
@@ -341,6 +341,11 @@ class PlayingActivity : AppCompatActivity() {
                 tvCurDuration.text =
                     Contains.durationString(service.getMediaCurrentPos() / 1000)
                 progressBar.max = (curSong.duration)
+
+                //
+                if(curSong.isOffline == false){
+                    getInfoSong()
+                }
                 //image change
                 if (curSong.thumbnail != null) {
                     val imgUrl = curSong.thumbnail

@@ -331,6 +331,8 @@ class MainActivity : AppCompatActivity() {
                 .setMessage("Do you want exit app @@ ")
                 .setNegativeButton("No",null)
                 .setPositiveButton("Yes",{_,_ ->
+                    val intent = Intent(this, MusicService::class.java)
+                    stopService(intent)
                     finish()
                 })
                 .show()
