@@ -31,15 +31,13 @@ import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
+import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import java.io.File
 
 
 class FavouriteFragment(
-    val musicService: MusicService,
-    context: Context,
-    val otherPlaylist: String? = null,
 ) : Fragment() {
 
 
@@ -49,21 +47,35 @@ class FavouriteFragment(
     lateinit var progressBar: ProgressBar
     lateinit var tvName: TextView
     lateinit var btnPlay: Button
-    private var adapter = SongAdapter(context)
+    lateinit var adapter : SongAdapter
     var newListFavourite: List<Song> = listOf()
+    var otherPlaylist: String? = null
+    var itemClick: FragmentAction? = null
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is FragmentAction) {
+            itemClick = context
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        itemClick = null
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_favourite, container, false)
+        otherPlaylist = arguments?.getString("playlist")
+        adapter = SongAdapter(requireActivity())
         initRv(view)
         setFavouriteSong()
         return view
     }
 
     private fun initRv(view: View) {
-
         tvState = view.findViewById(R.id.tv_state)
         progressBar = view.findViewById(R.id.progress_circular)
         tvName = view.findViewById(R.id.tv_recommed)
@@ -76,12 +88,7 @@ class FavouriteFragment(
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
             if (newListFavourite.isNotEmpty()) {
-                musicService.setPlaylist(newListFavourite)
-                musicService.setNewSong(newListFavourite[0].id)
-                musicService.playSong()
-                musicService.sendToActivity(ACTION_CHANGE_SONG)
-                val intentService = Intent(requireActivity(), MusicService::class.java)
-                requireActivity().startService(intentService)
+                itemClick?.setNewPlaylistOnFragment(newListFavourite as MutableList<Song>)
             } else showSnack("list empty")
         }
         close.setOnClickListener {
@@ -91,15 +98,11 @@ class FavouriteFragment(
         rvrecommnend.adapter = adapter
         rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         adapter.setItemClick {
-            musicService.setPlaylist(newListFavourite)
-            musicService.setNewSong(it.id)
-            musicService.playSong()
-            musicService.sendToActivity(ACTION_CHANGE_SONG)
-            val intentService = Intent(requireActivity(), MusicService::class.java)
-            requireActivity().startService(intentService)
+            itemClick?.setNewSongOnFragment(it,newListFavourite.toMutableList())
         }
         adapter.setDownloadClick {
-            downloadSong(it)
+           // downloadSong(it)
+            itemClick?.clickDownload(it)
         }
         adapter.setFavouriteClick {
             if (otherPlaylist == null) removeFavourite(it)
@@ -113,7 +116,7 @@ class FavouriteFragment(
             val id = it.id
             val isExistCrossRef = db.getDao().isExistCrossRef(id,otherPlaylist!!)
             if(isExistCrossRef){
-                db.getDao().deleteCrossRef(id,otherPlaylist)
+                db.getDao().deleteCrossRef(id,otherPlaylist!!)
             }
             withContext(Dispatchers.Main) {
                 showSnack("Remove from ${otherPlaylist} playlist")
@@ -135,51 +138,6 @@ class FavouriteFragment(
         }
     }
 
-    private fun downloadSong(song: Song) {
-        if (isStoragePermissionGranted()) {
-
-            val downloadManager =
-                requireActivity().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
-            val fileName = song.title
-            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
-            if (appFile.canRead()) {
-                showSnack("File Already Exists...")
-            } else {
-                showSnack("Waiting Download...")
-                val request = DownloadManager.Request(uri)
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                request.setTitle(fileName)
-                request.setDescription("downloading..")
-                request.setAllowedOverRoaming(true)
-                request.setDestinationInExternalPublicDir(
-                    (Environment.DIRECTORY_DOWNLOADS),
-                    fileName + ".mp3"
-                )
-                val downloadId = downloadManager.enqueue(request)
-            }
-        }
-    }
-
-    fun isStoragePermissionGranted(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (requireActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED
-            ) {
-                true
-            } else {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    1
-                )
-                false
-            }
-        } else { //permission is automatically granted on sdk<23 upon installation
-            true
-        }
-    }
-
     private fun setFavouriteSong() {
         loadFavouriteSong()
     }
@@ -190,9 +148,7 @@ class FavouriteFragment(
         tvState.text = "fetching"
         if (otherPlaylist == null)
             getFavouritePlaylist() // other playlist == null _> getFavourite Playlist
-        else getOtherPlaylist(otherPlaylist) // get playlist by playlist name
-
-
+        else getOtherPlaylist(otherPlaylist!!) // get playlist by playlist name
     }
 
     private fun getFavouritePlaylist() {

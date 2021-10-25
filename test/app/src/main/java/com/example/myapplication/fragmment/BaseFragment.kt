@@ -28,6 +28,7 @@ import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
+import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,10 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
-class BaseFragment(
-    val musicService: MusicService,
-    context: Context
-) :
+class BaseFragment() :
     Fragment() {
 
     lateinit var rvrecommnend: RecyclerView
@@ -47,13 +45,26 @@ class BaseFragment(
     lateinit var tvName : TextView
     lateinit var progressBar: ProgressBar
     lateinit var btnPlay : Button
-    private var adapter = BaseAdapter(context)
+    lateinit var adapter : BaseAdapter
     private var listSongLocal = mutableListOf<Song>()
+    var itemClick: FragmentAction? = null
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is FragmentAction) {
+            itemClick = context
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        itemClick = null
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_base, container, false)
+        adapter = BaseAdapter(requireActivity())
         initRv(view)
         setData()
         return view
@@ -67,12 +78,7 @@ class BaseFragment(
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
          if(listSongLocal.isNotEmpty()){
-                musicService.setPlaylist(listSongLocal, "OFFLINE")
-                musicService.setNewSong(listSongLocal[0].id)
-                musicService.playSong()
-                musicService.sendToActivity(ACTION_CHANGE_SONG)
-             val intentService = Intent(requireActivity(), MusicService::class.java)
-             requireActivity().startService(intentService)
+             itemClick?.setNewPlaylistOnFragment(listSongLocal,"OFFLINE")
             } else showSnack("Local song blank")
         }
         tvName.text = "Local Playlist"
@@ -89,12 +95,7 @@ class BaseFragment(
     }
     val intent = IntentFilter()
     private fun clickItem(it: Song) {
-        musicService.setPlaylist(listSongLocal, "OFFLINE")
-        musicService.setNewSong(it.id)
-        musicService.playSong()
-        musicService.sendToActivity(ACTION_CHANGE_SONG)
-        val intentService = Intent(requireActivity(), MusicService::class.java)
-        requireActivity().startService(intentService)
+        itemClick?.setNewSongOnFragment(it,listSongLocal,"OFFLINE")
     }
 
     private fun setData() {

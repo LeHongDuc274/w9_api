@@ -3,6 +3,7 @@ package com.example.myapplication.activities
 import android.Manifest
 import android.app.AlertDialog
 import android.app.DownloadManager
+import android.app.Fragment
 import android.content.*
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -33,15 +34,23 @@ import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
+import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.fragmment.*
+import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.checkNetWorkAvailable
+import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.snackbar.Snackbar
+import okhttp3.Cache
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), FragmentAction {
     private var listSong = mutableListOf<Song>()
     private var musicService: MusicService? = null
     private var isBound = false
@@ -52,13 +61,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var btnFavourite: ImageButton
     lateinit var btnOnline: ImageButton
     lateinit var btnOffline: ImageButton
-    lateinit var btnMyPlaylist : ImageButton
+    lateinit var btnMyPlaylist: ImageButton
     lateinit var tabName: TextView
-    var songApi: SongApi
     var searchApi: SongApi
 
     init {
-        songApi = SongApi.create()
         searchApi = SongApi.createSearch()
     }
 
@@ -84,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(p0: Context?, p1: Intent?) {
             p1?.let {
                 if (it.action == ConnectivityManager.CONNECTIVITY_ACTION) {
-                   // getTopSong(songApi)
+                    getTopSong()
                     musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
                 }
             }
@@ -140,19 +147,73 @@ class MainActivity : AppCompatActivity() {
                     val transaction = supportFragmentManager.beginTransaction()
                     transaction.add(
                         R.id.fragment_container,
-                        RecommendFragment(it, this@MainActivity, p0)
+                        RecommendFragment()
                     )
                     transaction.addToBackStack(null)
                     transaction.commit()
+                    supportFragmentManager.executePendingTransactions()
                     searchView.clearFocus()
+                    //add fragment ,load data activity-> send state and data to fragment
+                    if (p0 != null) {
+                        getSearchResult(p0)
+                    }
+
+
                 }
                 return true
             }
+
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
         })
     }
+
+    private fun getSearchResult(text: String) {
+        val fragment =
+            supportFragmentManager.findFragmentById(R.id.fragment_container) as? RecommendFragment
+        Log.e("frag",fragment.toString())
+        val search = text.trim()
+        fragment?.receiverStateLoad(1, null, "loading")
+        val searchApi = SongApi.createSearch()
+        searchApi.search("artist,song", 20, search).enqueue(object : Callback<SearchResponse> {
+            override fun onResponse(
+                call: Call<SearchResponse>,
+                response: Response<SearchResponse>
+            ) {
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+//                    "https://photo-resize-zmp3.zadn.vn/w94_r1x1_jpeg" +
+//                            "/cover/4/9/d/a/49da6a1d6cf13a42e77bc3a945d9dd6b.jpg?fs=MTYzNDY4MzgyOTUwM3x3ZWJWNHw"
+                    body?.let {
+                        if (it.data.isNotEmpty()) {
+                            val listSongSearch = it.data[0].song.toMutableList()
+                            var newlistSong = listSongSearch.map {
+                                Song(
+                                    artists_names = it.artist,
+                                    title = it.name,
+                                    duration = it.duration.toInt(),
+                                    thumbnail = Contains.BASE_IMG_URL + it.thumb,
+                                    id = it.id
+                                )
+                            }.toMutableList()
+                            fragment?.receiverStateLoad(2, newlistSong, "suucess")
+                        } else fragment?.receiverStateLoad(
+                            2,
+                            null,
+                            "Not Result for this key ${search.uppercase()}"
+                        )
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
+                showSnack("Error call api")
+            }
+        })
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
@@ -173,8 +234,11 @@ class MainActivity : AppCompatActivity() {
             changeContent()
             changePausePlayBtn()
             val transaction = supportFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container,HomeFragment(musicService!!))
-            transaction.commit()
+            transaction.replace(R.id.fragment_container, HomeFragment(), "1")
+            transaction.commitNow()
+            supportFragmentManager.executePendingTransactions()
+
+            getTopSong()
             isBound = true
         }
 
@@ -201,6 +265,7 @@ class MainActivity : AppCompatActivity() {
             true
         }
     }
+
     private fun changePausePlayBtn() {
         musicService?.let {
             if (it.isPlaying()) {
@@ -210,12 +275,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
     private fun changeTogglePausePlayUi(value: Int) {
         if (value == ACTION_PAUSE) btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
         else btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
         musicService?.let {
-            if(it.internetConnected== false && it.namePlaylist !="OFFLINE"){
+            if (it.internetConnected == false && it.namePlaylist != "OFFLINE") {
                 showSnack("No Internet")
             }
         }
@@ -258,7 +322,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         layout.setOnClickListener {
-            if (isBound ) {
+            if (isBound) {
                 val intent = Intent(this, PlayingActivity::class.java)
                 startActivity(intent)
             }
@@ -268,9 +332,14 @@ class MainActivity : AppCompatActivity() {
     private fun initControlTabBar() {
         btnMyPlaylist.setOnClickListener {
             val transaction = supportFragmentManager.beginTransaction()
-            transaction.add(R.id.fragment_container,MyPlaylistFragment(musicService = musicService!!))
+            transaction.add(
+                R.id.fragment_container,
+                MyPlaylistFragment()
+            )
             transaction.addToBackStack(null)
             transaction.commit()
+            supportFragmentManager.executePendingTransactions()
+
             btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
@@ -278,7 +347,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnOnline.setOnClickListener {
-            supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
+            supportFragmentManager.popBackStack(null, POP_BACK_STACK_INCLUSIVE)
             btnOnline.setImageResource(R.drawable.outline_cloud_checked)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
@@ -289,11 +358,13 @@ class MainActivity : AppCompatActivity() {
             musicService?.let {
                 transaction.add(
                     R.id.fragment_container,
-                    FavouriteFragment(it, this)
+                    FavouriteFragment()
                 )
             }
             transaction.addToBackStack(null)
             transaction.commit()
+            supportFragmentManager.executePendingTransactions()
+
 
             btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_checked)
@@ -306,11 +377,12 @@ class MainActivity : AppCompatActivity() {
             musicService?.let {
                 transaction.add(
                     R.id.fragment_container,
-                    BaseFragment(it, this)
+                    BaseFragment()
                 )
             }
             transaction.addToBackStack(null)
             transaction.commit()
+            supportFragmentManager.executePendingTransactions()
             btnOnline.setImageResource(R.drawable.outline_cloud_done_24)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_checked)
@@ -320,26 +392,166 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
 
-        if(supportFragmentManager.backStackEntryCount > 0){
-            supportFragmentManager.popBackStack(null,POP_BACK_STACK_INCLUSIVE)
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack(null, POP_BACK_STACK_INCLUSIVE)
             btnOnline.setImageResource(R.drawable.outline_cloud_checked)
             btnFavourite.setImageResource(R.drawable.outline_folder_special_24)
             btnOffline.setImageResource(R.drawable.outline_sim_card_download_24)
             btnMyPlaylist.setImageResource(R.drawable.ic_baseline_playlist_add_24)
-        } else{
+        } else {
             val dialog = AlertDialog.Builder(this).setTitle("Exit App ?")
                 .setMessage("Do you want exit app @@ ")
-                .setNegativeButton("No",null)
-                .setPositiveButton("Yes",{_,_ ->
+                .setNegativeButton("No", null)
+                .setPositiveButton("Yes", { _, _ ->
                     val intent = Intent(this, MusicService::class.java)
                     stopService(intent)
+                    unbindService(connection)
                     finish()
                 })
                 .show()
         }
-           // super.onBackPressed()
+    }
+
+    //
+//    private fun setRecommendSong() {
+//        val isOffline = musicService.cursong?.isOffline ?: true
+//        if (!isOffline) {
+//            loadRecommendSong()
+//        } else {
+//            tvState.visibility = View.VISIBLE
+//            progressBar.visibility = View.GONE
+//            tvState.text = "OffLine Music - Not Has Recommend Song"
+//        }
+//    }
+//
+//    private fun loadRecommendSong() {
+//        val songId = musicService.cursong?.id
+//        progressBar.visibility = View.VISIBLE
+//        tvState.visibility = View.VISIBLE
+//        tvState.text = "fetching"
+//        val recommendResponses = SongApi.create().getRecommend("audio", songId!!)
+//        recommendResponses.enqueue(object : Callback<RecommendResponses> {
+//            override fun onResponse(
+//                call: Call<RecommendResponses>,
+//                response: Response<RecommendResponses>
+//            ) {
+//                if (response.isSuccessful) {
+//                    val body = response.body()
+//                    body?.let {
+//                        listSong = it.data.items.toMutableList()
+//                        listSong.let { adapter.setData(it.toMutableList()) }
+//                        progressBar.visibility = View.GONE
+//                        tvState.visibility = View.GONE
+//                    }
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
+//                showSnack("Error call API")
+//            }
+//        })
+//    }
+
+    fun getTopSong() {
+        val songApi = SongApi.create()
+        var response: TopSongResponse? = null
+        val fragment =
+            supportFragmentManager.findFragmentById(R.id.fragment_container) as? HomeFragment
+        if (Contains.checkNetWorkAvailable(this)) {
+            fragment?.receiverStateLoad(1, null, "fetching")
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    withTimeout(3000) {
+                        try {
+                            response = songApi.getTopSong()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                        withContext(Dispatchers.Main) {
+                            response?.let {
+                                val listSongTop = it.data.song.toMutableList()
+                                if (!listSongTop.isEmpty()) {
+                                    musicService.let {
+                                        Log.e("tag", fragment.toString())
+                                        fragment?.receiverStateLoad(2, listSongTop, null)
+                                        if (it!!.isPlaylistEmpty()) {
+                                            it.setPlaylist(listSongTop)
+                                            if (it.cursong == null) it.setNewSong(listSongTop[0].id)
+                                            musicService?.sendToActivity(ACTION_CHANGE_SONG)
+                                            musicService?.sendToActivity(ACTION_PAUSE)
+                                        }
+                                    }
+                                } else fragment?.receiverStateLoad(2, listSongTop, null)
+                            }
+                        }
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    fragment?.receiverStateLoad(3, null, "error")
+                }
+            }
+        } else {
+            fragment?.receiverStateLoad(3, null, "No internet")
+        }
+    }
+
+    override fun setRecommendSong(song: Song) {
 
     }
+
+
+    override fun clickDownload(song: Song) {
+        downloadSong(song)
+    }
+
+    override fun setNewPlaylistOnFragment(newlistSong: MutableList<Song>,name:String) {
+        musicService?.let {
+            it.setPlaylist(newlistSong,name)
+            it.setNewSong(newlistSong[0].id)
+            it.playSong()
+            it.sendToActivity(ACTION_CHANGE_SONG)
+            val intentService = Intent(this, MusicService::class.java)
+            startService(intentService)
+        }
+    }
+
+    override fun setNewSongOnFragment(newSong: Song, newlistSong: MutableList<Song>,name: String) {
+        musicService?.let {
+            it.setPlaylist(newlistSong,name)
+            it.setNewSong(newSong.id)
+            it.playSong()
+            it.sendToActivity(ACTION_CHANGE_SONG)
+            val intentService = Intent(this, MusicService::class.java)
+            startService(intentService)
+        }
+    }
+
+    private fun downloadSong(song: Song) {
+        if (isStoragePermissionGranted()) {
+
+            val downloadManager =
+                getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
+            val fileName = song.title
+            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
+            if (appFile.canRead()) {
+                showSnack("File Already Exists...")
+            } else {
+                showSnack("Waiting Download...")
+                val request = DownloadManager.Request(uri)
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                request.setTitle(fileName)
+                request.setDescription("downloading..")
+                request.setAllowedOverRoaming(true)
+                request.setDestinationInExternalPublicDir(
+                    (Environment.DIRECTORY_DOWNLOADS),
+                    fileName + ".mp3"
+                )
+                val downloadId = downloadManager.enqueue(request)
+            }
+        }
+    }
+
+
     private fun showSnack(mess: String) {
         Snackbar.make(findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG).show()
     }

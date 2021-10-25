@@ -29,6 +29,7 @@ import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
+import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import retrofit2.Call
@@ -37,9 +38,6 @@ import retrofit2.Response
 import java.io.File
 
 class RecommendFragment(
-    val musicService: MusicService,
-    context: Context,
-    val query: String? = null
 ) : Fragment() {
 
     lateinit var rvrecommnend: RecyclerView
@@ -48,29 +46,17 @@ class RecommendFragment(
     lateinit var progressBar: ProgressBar
     lateinit var tvName: TextView
     lateinit var btnPlay: Button
-    private var adapter = SongAdapter(context)
+    lateinit var adapter: SongAdapter
     private var listSong = mutableListOf<Song>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
+       adapter =  SongAdapter(requireActivity())
         val view = inflater.inflate(R.layout.fragment_recommend, container, false)
         initRv(view)
-
-        if (query == null) {
-            setRecommendSong()
-            musicService.cursong?.let {
-                tvName.text = "Playlist Recommend của bài hát :" + it.title
-            }
-
-        } else {
-            getSearchResult(query)
-            tvName.text = "Playlist Kết quả tìm kiếm của :  " + query + " key"
-        }
         return view
     }
-
 
     private fun initRv(view: View) {
         tvState = view.findViewById(R.id.tv_state)
@@ -85,151 +71,53 @@ class RecommendFragment(
         btnPlay.isClickable = false
         btnPlay.setOnClickListener {
             if (listSong.isNotEmpty()) {
-                musicService.setPlaylist(listSong)
-                musicService.setNewSong(listSong[0].id)
-                musicService.playSong()
-                musicService.sendToActivity(ACTION_CHANGE_SONG)
-                val intentService = Intent(requireActivity(), MusicService::class.java)
-                requireActivity().startService(intentService)
+                itemClick?.setNewPlaylistOnFragment(listSong)
             } else showSnack("List empty")
         }
         rvrecommnend = view.findViewById(R.id.rv_recommed)
         rvrecommnend.adapter = adapter
         rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         adapter.setItemClick {
-            musicService.setPlaylist(listSong)
-            musicService.setNewSong(it.id)
-            musicService.playSong()
-            musicService.sendToActivity(ACTION_CHANGE_SONG)
-            val intentService = Intent(requireActivity(), MusicService::class.java)
-            requireActivity().startService(intentService)
+            itemClick?.setNewSongOnFragment(it, listSong)
         }
         adapter.setDownloadClick {
-            downloadSong(it)
+            itemClick?.clickDownload(it)
         }
     }
 
-    private fun getSearchResult(text: String) {
-        val search = text.trim()
-        val searchApi = SongApi.createSearch()
-        searchApi.search("artist,song", 20, search).enqueue(object : Callback<SearchResponse> {
-            override fun onResponse(
-                call: Call<SearchResponse>,
-                response: Response<SearchResponse>
-            ) {
-                progressBar.visibility = View.GONE
+    var itemClick: FragmentAction? = null
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is FragmentAction) {
+            itemClick = context
+        }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        itemClick= null
+    }
+    fun receiverStateLoad(state: Int, data: MutableList<Song>?, mess: String?) {
+        when (state) {
+            1 -> {// loading
+                tvState.visibility = View.VISIBLE
+                progressBar.visibility = View.VISIBLE
+                tvState.text = mess
+            }
+            2 -> {  //succes
                 tvState.visibility = View.GONE
-                if (response.isSuccessful) {
-                    val body = response.body()
-//                    "https://photo-resize-zmp3.zadn.vn/w94_r1x1_jpeg" +
-//                            "/cover/4/9/d/a/49da6a1d6cf13a42e77bc3a945d9dd6b.jpg?fs=MTYzNDY4MzgyOTUwM3x3ZWJWNHw"
-                    body?.let {
-                        if (it.data.isNotEmpty()) {
-                            val listSongSearch = it.data[0].song.toMutableList()
-                            listSong = listSongSearch.map {
-                                Song(
-                                    artists_names = it.artist,
-                                    title = it.name,
-                                    duration = it.duration.toInt(),
-                                    thumbnail = Contains.BASE_IMG_URL + it.thumb,
-                                    id = it.id
-                                )
-                            }.toMutableList()
-                            adapter.setData(listSong)
-                            if (listSongSearch.isNotEmpty()) btnPlay.isClickable = true
-                        } else showSnack("Not Result for this key ${search.uppercase()}")
-                    }
+                progressBar.visibility = View.GONE
+                data?.let {
+                    listSong = it
+                    adapter.setData(it)
                 }
             }
-
-            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
-                showSnack("Error call api")
-            }
-        })
-    }
-
-    private fun downloadSong(song: Song) {
-        if (isStoragePermissionGranted()) {
-
-            val downloadManager =
-                requireActivity().getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
-            val fileName = song.title
-            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
-            if (appFile.canRead()) {
-                showSnack("File Already Exists...")
-            } else {
-                showSnack("Waiting Download...")
-                val request = DownloadManager.Request(uri)
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                request.setTitle(fileName)
-                request.setDescription("downloading..")
-                request.setAllowedOverRoaming(true)
-                request.setDestinationInExternalPublicDir(
-                    (Environment.DIRECTORY_DOWNLOADS),
-                    fileName + ".mp3"
-                )
-                val downloadId = downloadManager.enqueue(request)
+            3 -> { // error
+                tvState.visibility = View.GONE
+                progressBar.visibility = View.GONE
+                showSnack(mess ?: "error")
             }
         }
-    }
-
-    fun isStoragePermissionGranted(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (requireActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED
-            ) {
-                true
-            } else {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    1
-                )
-                false
-            }
-        } else { //permission is automatically granted on sdk<23 upon installation
-            true
-        }
-    }
-
-    private fun setRecommendSong() {
-        val isOffline = musicService.cursong?.isOffline ?: true
-        if (!isOffline) {
-            loadRecommendSong()
-        } else {
-            tvState.visibility = View.VISIBLE
-            progressBar.visibility = View.GONE
-            tvState.text = "OffLine Music - Not Has Recommend Song"
-        }
-    }
-
-    private fun loadRecommendSong() {
-        val songId = musicService.cursong?.id
-        progressBar.visibility = View.VISIBLE
-        tvState.visibility = View.VISIBLE
-        tvState.text = "fetching"
-        val recommendResponses = SongApi.create().getRecommend("audio", songId!!)
-        recommendResponses.enqueue(object : Callback<RecommendResponses> {
-            override fun onResponse(
-                call: Call<RecommendResponses>,
-                response: Response<RecommendResponses>
-            ) {
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    body?.let {
-                        listSong = it.data.items.toMutableList()
-                        listSong.let { adapter.setData(it.toMutableList()) }
-                        progressBar.visibility = View.GONE
-                        tvState.visibility = View.GONE
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
-                showSnack("Error call API")
-            }
-        })
     }
 
     private fun showSnack(mess: String) {

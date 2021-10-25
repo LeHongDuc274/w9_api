@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
+import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,15 +21,13 @@ import com.example.myapplication.data.local.models.Playlist
 import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.local.models.SongInPlaylist
 import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
+import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.service.MusicService
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 
 class MyPlaylistFragment(
-    val addSong: Boolean = false,
-    val id: String? = null,
-    val musicService: MusicService
 ) : Fragment() {
-
     lateinit var btn_create: Button
     lateinit var edt_name: EditText
     lateinit var rv: RecyclerView
@@ -36,12 +35,13 @@ class MyPlaylistFragment(
     var listPlaylist = mutableListOf<Playlist>()
     val adapter = PlaylistAdapter()
     lateinit var db: SongDao
-
+    var song: Song? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
+        song = arguments?.getSerializable("song") as Song?
         val view = inflater.inflate(R.layout.fragment_my_playlist, container, false)
         db = SongDatabase.getInstance(requireContext().applicationContext).getDao()
         initViews(view)
@@ -82,11 +82,9 @@ class MyPlaylistFragment(
     }
 
     private fun itemClick(playlist: Playlist) {
-        if (addSong) {
-            //add song to play list
+        if (song != null) {
             addSongtoPlaylist(playlist)
         } else {
-            //show all song in playlist
             showPlaylist(playlist)
         }
     }
@@ -95,34 +93,33 @@ class MyPlaylistFragment(
         val transaction = requireActivity().supportFragmentManager.beginTransaction()
         transaction.add(
             R.id.fragment_container,
-            FavouriteFragment(musicService = musicService, requireActivity(), playlist.playlistName)
+            FavouriteFragment::class.java,
+            bundleOf("playlist" to playlist.playlistName)
         )
         transaction.addToBackStack(null)
         transaction.commit()
     }
 
     private fun addSongtoPlaylist(playlist: Playlist) {
-        val song = musicService.cursong!!
-        if (musicService.cursong != null) {
-            val crossRef = SongPlaylistCrossRef(playlist.playlistName, id!!)
+
+        if (!song!!.isOffline) {
+            val crossRef = SongPlaylistCrossRef(playlist.playlistName, song!!.id)
             val songInPlaylist = SongInPlaylist(
-                artists_names = song.artists_names,
-                duration = song.duration,
-                id = song.id,
-                thumbnail = song.thumbnail,
-                title = song.title
+                artists_names = song!!.artists_names,
+                duration = song!!.duration,
+                id = song!!.id,
+                thumbnail = song!!.thumbnail,
+                title = song!!.title
             )
             CoroutineScope(Dispatchers.IO).launch {
                 db.insertSongPlaylistCrossRef(crossRef)
                 db.insertSongInPlaylist(songInPlaylist)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireActivity(),
-                        "add to ${playlist.playlistName} successfully",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showSnack("add to ${playlist.playlistName} successfully")
                 }
             }
+        } else {
+            showSnack("Can't add offline music to this playlist")
         }
     }
 
@@ -139,15 +136,19 @@ class MyPlaylistFragment(
                         adapter.setData(listPlaylist)
                     }
                 } else withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        requireActivity(),
-                        "Playlist is Existed,change name",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showSnack("Playlist is Existed,change name")
                 }
             }
         } else {
-            Toast.makeText(requireActivity(), "please enter the name", Toast.LENGTH_SHORT).show()
+            showSnack("please enter the name")
         }
+    }
+
+    private fun showSnack(mess: String) {
+        Snackbar.make(
+            requireActivity().findViewById(R.id.root_layout),
+            mess,
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 }

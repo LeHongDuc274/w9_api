@@ -33,10 +33,11 @@ import com.example.myapplication.utils.Contains.ACTION_PREV
 import com.example.myapplication.utils.Contains.FROM_NOTIFY
 import com.example.myapplication.utils.MyApp
 import kotlinx.coroutines.*
+import java.io.Serializable
 import java.lang.IllegalStateException
 import kotlin.random.Random
 
-class MusicService : Service() {
+class MusicService : Service(){
     private var mediaPlayer = MediaPlayer()
 
     private var playlist = listOf<Song>()

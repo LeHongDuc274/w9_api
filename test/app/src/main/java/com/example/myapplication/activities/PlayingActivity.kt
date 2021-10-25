@@ -1,13 +1,22 @@
 package com.example.myapplication.activities
 
+import android.Manifest
+import android.app.DownloadManager
 import android.content.*
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.media.AudioManager
+import android.net.Uri
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.os.IBinder
+import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.core.app.ActivityCompat
+import androidx.core.os.bundleOf
 
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -19,7 +28,9 @@ import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.info.Infor
+import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.fragmment.HomeFragment
 import com.example.myapplication.fragmment.MyPlaylistFragment
 import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.service.MusicService
@@ -28,14 +39,16 @@ import com.example.myapplication.utils.Contains.ACTION_CANCEL
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.ACTION_PAUSE
 import com.example.myapplication.utils.Contains.ACTION_PLAY
+import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 
-class PlayingActivity : AppCompatActivity() {
+class PlayingActivity : AppCompatActivity(),FragmentAction {
     private var musicService: MusicService? = null
     private var isBound = false
     private var fromUser = false
@@ -229,24 +242,27 @@ class PlayingActivity : AppCompatActivity() {
             }
         }
         ivAddFragment.setOnClickListener {
-            loadFragment(RecommendFragment(musicService!!, this))
+            val bundle = bundleOf(
+                "recommend" to true
+            )
+            val transaction = supportFragmentManager.beginTransaction()
+            transaction.add(R.id.fragment_container, RecommendFragment::class.java,bundle)
+            transaction.addToBackStack(null)
+            transaction.commit()
+            supportFragmentManager.executePendingTransactions()
+            setRecommendSong()
         }
         ivAddPlaylist.setOnClickListener {
-            val id = musicService?.cursong?.id
-            id?.let {
-                loadFragment(MyPlaylistFragment(true,id,musicService= musicService!!))
+             musicService?.cursong?.let {
+                val transaction = supportFragmentManager.beginTransaction()
+                transaction.add(R.id.fragment_container, MyPlaylistFragment::class.java, bundleOf("song" to it))
+                transaction.addToBackStack(null)
+                transaction.commit()
+                supportFragmentManager.executePendingTransactions()
             }
         }
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        musicService?.let {
-            val transaction = supportFragmentManager.beginTransaction()
-            transaction.add(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commit()
-        }
-    }
 
     private fun changeRepeatState() {
         if (musicService!!.repeat) btnRepeat.setImageResource(R.drawable.ic_repeat_on)
@@ -342,22 +358,24 @@ class PlayingActivity : AppCompatActivity() {
                     Contains.durationString(service.getMediaCurrentPos() / 1000)
                 progressBar.max = (curSong.duration)
 
-                //
-                if(curSong.isOffline == false){
-                    getInfoSong()
-                }
                 //image change
-                if (curSong.thumbnail != null) {
+                if (curSong.thumbnail != null) { //online
                     val imgUrl = curSong.thumbnail
                     Glide.with(applicationContext).load(imgUrl).circleCrop().into(ivContent)
-                } else if (curSong.image.isNotEmpty()) {
+                } else if (curSong.image.isNotEmpty()) { // offline
                     ivContent.setImageBitmap(
                         BitmapFactory.decodeByteArray(curSong.image, 0, curSong.image.size)
                     )
                 } else ivContent.setImageResource(R.drawable.ic_baseline_music_note_24)
+
                 // ofline mode - hide view
+                //get category when song isn't LocalSong
+                if(curSong.isOffline == false){
+                    getInfoSong()
+                }
                 if (curSong.isOffline) ivFavourite.visibility = View.GONE
                 else ivFavourite.visibility = View.VISIBLE
+
                 //favourite change
                 //check existed database
                 val id = curSong.id
@@ -372,7 +390,118 @@ class PlayingActivity : AppCompatActivity() {
             }
         }
     }
+    private fun setRecommendSong() {
+        val isOffline = musicService?.cursong?.isOffline ?: true
+        if (!isOffline) {
+            loadRecommendSong()
+        } else {
+            val fragment =
+                supportFragmentManager.findFragmentById(R.id.fragment_container) as? RecommendFragment
+            fragment?.receiverStateLoad(3, null, "Offline Song, hasn't recommend Song")
 
+           // showSnack("offline song")
+        }
+    }
+
+    private fun loadRecommendSong() {
+        val songId = musicService?.cursong?.id
+        val fragment =
+            supportFragmentManager.findFragmentById(R.id.fragment_container) as? RecommendFragment
+        val recommendResponses = SongApi.create().getRecommend("audio", songId!!)
+        fragment?.receiverStateLoad(1, null, "fetching")
+        recommendResponses.enqueue(object : Callback<RecommendResponses> {
+            override fun onResponse(
+                call: Call<RecommendResponses>,
+                response: Response<RecommendResponses>
+            ) {
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    body?.let {
+                        val newlist = it.data.items.toMutableList()
+                        newlist.let {
+                            fragment?.receiverStateLoad(2, newlist, "suucess")
+                        }
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
+                showSnack("Error call API")
+            }
+        })
+    }
+    override fun setRecommendSong(song: Song) {
+
+    }
+
+    override fun clickDownload(song: Song) {
+        downloadSong(song)
+    }
+
+    override fun setNewPlaylistOnFragment(newlistSong: MutableList<Song>,name: String) {
+        musicService?.let {
+            it.setPlaylist(newlistSong)
+            it.setNewSong(newlistSong[0].id)
+            it.playSong()
+            it.sendToActivity(ACTION_CHANGE_SONG)
+            val intentService = Intent(this, MusicService::class.java)
+            startService(intentService)
+        }
+    }
+
+    override fun setNewSongOnFragment(newSong: Song, newlistSong: MutableList<Song>,name:String) {
+        musicService?.let {
+            it.setPlaylist(newlistSong)
+            it.setNewSong(newSong.id)
+            it.playSong()
+            it.sendToActivity(ACTION_CHANGE_SONG)
+            val intentService = Intent(this, MusicService::class.java)
+            startService(intentService)
+        }
+    }
+    fun isStoragePermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED
+            ) {
+                true
+            } else {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    1
+                )
+                false
+            }
+        } else { //permission is automatically granted on sdk<23 upon installation
+            true
+        }
+    }
+    private fun downloadSong(song: Song) {
+        if (isStoragePermissionGranted()) {
+
+            val downloadManager =
+                getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${song.id}/128")
+            val fileName = song.title
+            val appFile = File("/storage/emulated/0/Download/" + fileName + ".mp3")
+            if (appFile.canRead()) {
+                showSnack("File Already Exists...")
+            } else {
+                showSnack("Waiting Download...")
+                val request = DownloadManager.Request(uri)
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                request.setTitle(fileName)
+                request.setDescription("downloading..")
+                request.setAllowedOverRoaming(true)
+                request.setDestinationInExternalPublicDir(
+                    (Environment.DIRECTORY_DOWNLOADS),
+                    fileName + ".mp3"
+                )
+                val downloadId = downloadManager.enqueue(request)
+            }
+        }
+    }
     private fun showSnack(mess: String) {
         Snackbar.make(findViewById(R.id.root_layout), mess, Snackbar.LENGTH_LONG).show()
     }
