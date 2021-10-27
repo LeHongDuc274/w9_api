@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="LockedOrientationActivity"
     package="com.example.myapplication" >
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -11,7 +12,7 @@
 
     <application
         android:requestLegacyExternalStorage= "true"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:name=".utils.MyApp"
@@ -21,12 +22,14 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="m" >
         <activity
+            android:screenOrientation="portrait"
             android:name=".activities.PlayingActivity"
             android:exported="true" />
 
         <service android:name=".service.MusicService" />
 
         <activity
+            android:screenOrientation="portrait"
             android:name=".activities.MainActivity"
             android:exported="true" >
             <intent-filter>

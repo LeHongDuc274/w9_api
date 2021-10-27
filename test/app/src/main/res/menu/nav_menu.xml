@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/outline_cloud_done_24"
+        android:title="Home"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/favouriteFragment"
+        android:icon="@drawable/outline_folder_special_24"
+        android:title="Favourite"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/baseFragment"
+        android:icon="@drawable/outline_sim_card_download_24"
+        android:title="Local"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/nestedGraph"
+        android:icon="@drawable/ic_baseline_playlist_add_24"
+        android:title="My Playlist"
+        app:showAsAction="always" />
+</menu>

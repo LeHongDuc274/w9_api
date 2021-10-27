@@ -6,14 +6,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/background_fragment"
-    tools:context=".fragmment.RecommendFragment">
+    tools:context=".fragmment.HomeFragment">
+
 
     <ImageView
         android:id="@+id/close"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="8dp"
-        android:src="@drawable/ic_baseline_keyboard_arrow_down_24"
+        android:src="@null"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -22,7 +23,7 @@
         android:id="@+id/tv_recommed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Recommend"
+        android:text="Top Song 100"
         android:textColor="@color/purple_700"
         android:textSize="17sp"
         android:singleLine="true"
@@ -76,4 +77,6 @@
         app:layout_constraintEnd_toEndOf="@+id/progress_circular"
         app:layout_constraintStart_toStartOf="@+id/progress_circular"
         app:layout_constraintTop_toBottomOf="@+id/progress_circular" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

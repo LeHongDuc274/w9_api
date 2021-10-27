@@ -3,10 +3,16 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/background_fragment.xml" value="0.11875" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/background_textview.xml" value="0.2703125" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_heart_broken_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_keyboard_arrow_down_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_keyboard_arrow_up_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_music_note_24.xml" value="0.14635416666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_music_note_color.xml" value="0.20052083333333334" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_24.xml" value="0.11979166666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_500.xml" value="0.20104166666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_playlist_add_checked.xml" value="0.20052083333333334" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_repeat_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_baseline_shuffle_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/ic_heart_checked.xml" value="0.14635416666666667" />
@@ -20,10 +26,16 @@
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/outline_sim_card_download_checked.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/activity_main.xml" value="0.25416666666666665" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/activity_playing.xml" value="0.24010416666666667" />
-        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_recommend.xml" value="0.176" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_base.xml" value="0.4" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_favourite.xml" value="0.19322916666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_home.xml" value="0.24010416666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_my_playlist.xml" value="0.536" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_recommend.xml" value="0.4" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/item_playlist.xml" value="0.19375" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/item_song.xml" value="0.4" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/notify_layout.xml" value="0.13020833333333334" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/menu/menu.xml" value="0.18177083333333333" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/menu/nav_menu.xml" value="0.178125" />
         <entry key="..\:/Trainning/test/app/src/main/res/drawable-v24/ic_baseline_star_rate_24.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/test/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/test/app/src/main/res/drawable/ic_baseline_music_note_24.xml" value="0.14635416666666667" />

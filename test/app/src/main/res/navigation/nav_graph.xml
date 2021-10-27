@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/homeFragment">
+
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.myapplication.fragmment.HomeFragment"
+        android:label="fragment_home"
+        tools:layout="@layout/fragment_home" />
+    <fragment
+        android:id="@+id/favouriteFragment"
+        android:name="com.example.myapplication.fragmment.FavouriteFragment"
+        android:label="fragment_favourite"
+        tools:layout="@layout/fragment_favourite" />
+    <fragment
+        android:id="@+id/baseFragment"
+        android:name="com.example.myapplication.fragmment.BaseFragment"
+        android:label="fragment_base"
+        tools:layout="@layout/fragment_base" />
+<!--    <fragment-->
+<!--        android:id="@+id/myPlaylistFragment"-->
+<!--        android:name="com.example.myapplication.fragmment.MyPlaylistFragment"-->
+<!--        android:label="fragment_my_playlist"-->
+<!--        tools:layout="@layout/fragment_my_playlist" >-->
+<!--        <action-->
+<!--            android:id="@+id/action_myPlaylistFragment_to_favouriteFragment"-->
+<!--            app:destination="@id/favouriteFragment" />-->
+<!--    </fragment>-->
+    <navigation android:id="@+id/nestedGraph"
+        app:startDestination="@id/myPlaylistFragment">
+        <fragment
+            android:id="@+id/myPlaylistFragment"
+            android:name="com.example.myapplication.fragmment.MyPlaylistFragment"
+            android:label="fragment_my_playlist"
+            tools:layout="@layout/fragment_my_playlist">
+            <action
+                android:id="@+id/action_myPlaylistFragment_to_favouriteFragment2"
+                app:destination="@id/favouriteFragment" />
+        </fragment>
+        <fragment
+            android:id="@+id/favouriteFragment"
+            android:name="com.example.myapplication.fragmment.FavouriteFragment"
+            android:label="fragment_favourite"
+            tools:layout="@layout/fragment_favourite" />
+</navigation>
+</navigation>

@@ -1,6 +1,7 @@
 package com.example.myapplication.data.remote.responses
 
 import com.example.myapplication.utils.Contains.TYPE_ONLINE
+import java.io.Serializable
 
 
 //data class Song(
@@ -40,5 +41,5 @@ data class Song(
     var favorit: Boolean = false,
     var image: ByteArray = byteArrayOf(),
     var isOffline : Boolean = false
-)
+) : Serializable
 //var song = Song(artists_names = "name",duration = 100,id = "23",thumbnail = "link")
