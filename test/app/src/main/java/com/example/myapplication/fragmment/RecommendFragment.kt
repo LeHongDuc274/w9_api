@@ -25,6 +25,7 @@ import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.search.SearchResponse
+import com.example.myapplication.databinding.FragmentRecommendBinding
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
@@ -39,44 +40,34 @@ import java.io.File
 
 class RecommendFragment(
 ) : Fragment() {
-
-    lateinit var rvrecommnend: RecyclerView
-    lateinit var close: ImageView
-    lateinit var tvState: TextView
-    lateinit var progressBar: ProgressBar
-    lateinit var tvName: TextView
-    lateinit var btnPlay: Button
+    private var _binding : FragmentRecommendBinding ? = null
+    private  val binding get() = _binding!!
     lateinit var adapter: SongAdapter
     private var listSong = mutableListOf<Song>()
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
        adapter =  SongAdapter(requireActivity())
-        val view = inflater.inflate(R.layout.fragment_recommend, container, false)
-        initRv(view)
+        _binding = FragmentRecommendBinding.inflate(inflater,container,false)
+        val view = binding.root
+        initRv()
         return view
     }
 
-    private fun initRv(view: View) {
-        tvState = view.findViewById(R.id.tv_state)
-        progressBar = view.findViewById(R.id.progress_circular)
-        tvName = view.findViewById(R.id.tv_recommed)
-        tvName.isSelected = true
-        close = view.findViewById(R.id.close)
-        close.setOnClickListener {
+    private fun initRv() {
+        binding.tvRecommed.isSelected = true
+        binding.close.setOnClickListener {
             super.requireActivity().onBackPressed()
         }
-        btnPlay = view.findViewById(R.id.play_playlist)
-        btnPlay.isClickable = false
-        btnPlay.setOnClickListener {
+        binding.playPlaylist.isClickable = false
+        binding.playPlaylist.setOnClickListener {
             if (listSong.isNotEmpty()) {
                 itemClick?.setNewPlaylistOnFragment(listSong)
             } else showSnack("List empty")
         }
-        rvrecommnend = view.findViewById(R.id.rv_recommed)
-        rvrecommnend.adapter = adapter
-        rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+        binding.rvRecommed.adapter = adapter
+        binding.rvRecommed.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         adapter.setItemClick {
             itemClick?.setNewSongOnFragment(it, listSong)
         }
@@ -100,21 +91,21 @@ class RecommendFragment(
     fun receiverStateLoad(state: Int, data: MutableList<Song>?, mess: String?) {
         when (state) {
             1 -> {// loading
-                tvState.visibility = View.VISIBLE
-                progressBar.visibility = View.VISIBLE
-                tvState.text = mess
+                binding.tvState.visibility = View.VISIBLE
+                binding.progressCircular.visibility = View.VISIBLE
+                binding.tvState.text = mess
             }
             2 -> {  //succes
-                tvState.visibility = View.GONE
-                progressBar.visibility = View.GONE
+                binding.tvState.visibility = View.GONE
+                binding.progressCircular.visibility = View.GONE
                 data?.let {
                     listSong = it
                     adapter.setData(it)
                 }
             }
             3 -> { // error
-                tvState.visibility = View.GONE
-                progressBar.visibility = View.GONE
+                binding.tvState.visibility = View.GONE
+                binding.progressCircular.visibility = View.GONE
                 showSnack(mess ?: "error")
             }
         }

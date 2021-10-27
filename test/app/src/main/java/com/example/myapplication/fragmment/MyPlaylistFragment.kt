@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
+import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -22,16 +23,16 @@ import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.local.models.SongInPlaylist
 import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.databinding.FragmentMyPlaylistBinding
 import com.example.myapplication.service.MusicService
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 
 class MyPlaylistFragment(
 ) : Fragment() {
-    lateinit var btn_create: Button
-    lateinit var edt_name: EditText
-    lateinit var rv: RecyclerView
-    lateinit var btn_close: ImageButton
+    private var _binding : FragmentMyPlaylistBinding? = null
+    private val binding get() =  _binding!!
+
     var listPlaylist = mutableListOf<Playlist>()
     val adapter = PlaylistAdapter()
     lateinit var db: SongDao
@@ -39,14 +40,20 @@ class MyPlaylistFragment(
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         // Inflate the layout for this fragment
         song = arguments?.getSerializable("song") as Song?
-        val view = inflater.inflate(R.layout.fragment_my_playlist, container, false)
+        _binding = FragmentMyPlaylistBinding.inflate(inflater,container,false)
+        val view = binding.root
         db = SongDatabase.getInstance(requireContext().applicationContext).getDao()
-        initViews(view)
+        initViews()
         getlistPlaylist()
         return view
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
     }
 
     private fun getlistPlaylist() {
@@ -58,25 +65,21 @@ class MyPlaylistFragment(
         }
     }
 
-    private fun initViews(view: View) {
-        btn_close = view.findViewById(R.id.close)
-        btn_create = view.findViewById(R.id.create)
-        edt_name = view.findViewById(R.id.edt_playlist)
-        rv = view.findViewById(R.id.rv_playlist)
+    private fun initViews() {
         adapter.setData(listPlaylist)
         adapter.setOnClickItem {
             itemClick(it)
         }
-        rv.adapter = adapter
-        rv.layoutManager = LinearLayoutManager(
+        binding.rvPlaylist.adapter = adapter
+        binding.rvPlaylist.layoutManager = LinearLayoutManager(
             requireActivity().applicationContext,
             LinearLayoutManager.VERTICAL,
             false
         )
-        btn_create.setOnClickListener {
+        binding.create.setOnClickListener {
             createNewPlaylist()
         }
-        btn_close.setOnClickListener {
+        binding.close.setOnClickListener {
             super.requireActivity().onBackPressed()
         }
     }
@@ -88,16 +91,14 @@ class MyPlaylistFragment(
             showPlaylist(playlist)
         }
     }
-
     private fun showPlaylist(playlist: Playlist) {
-        val transaction = requireActivity().supportFragmentManager.beginTransaction()
-        transaction.add(
-            R.id.fragment_container,
-            FavouriteFragment::class.java,
+        val navHostFragment =
+            requireActivity().supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
+        val controller = navHostFragment.navController
+        controller.navigate(
+            R.id.favouriteFragment,
             bundleOf("playlist" to playlist.playlistName)
         )
-        transaction.addToBackStack(null)
-        transaction.commit()
     }
 
     private fun addSongtoPlaylist(playlist: Playlist) {
@@ -124,8 +125,8 @@ class MyPlaylistFragment(
     }
 
     private fun createNewPlaylist() {
-        edt_name.clearFocus()
-        val name = edt_name.text.trim().toString()
+        binding.edtPlaylist.clearFocus()
+        val name = binding.edtPlaylist.text.trim().toString()
         if (name.isNotEmpty()) {
             CoroutineScope(Dispatchers.IO).launch {
                 val isPlaylistExist = db.isPlaylistExits(name)

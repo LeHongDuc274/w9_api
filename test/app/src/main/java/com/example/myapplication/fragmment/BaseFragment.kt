@@ -18,6 +18,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.FragmentManager
+import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
@@ -25,6 +26,7 @@ import com.example.myapplication.adapter.BaseAdapter
 import com.example.myapplication.adapter.SongAdapter
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.databinding.FragmentBaseBinding
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
@@ -38,13 +40,16 @@ import java.util.concurrent.TimeUnit
 
 class BaseFragment() :
     Fragment() {
+//
+//    lateinit var rvrecommnend: RecyclerView
+//    lateinit var close: ImageView
+//    lateinit var tvState: TextView
+//    lateinit var tvName : TextView
+//    lateinit var progressBar: ProgressBar
+//    lateinit var btnPlay : Button
+    private  var _binding: FragmentBaseBinding? = null
+    private val binding get() = _binding!!
 
-    lateinit var rvrecommnend: RecyclerView
-    lateinit var close: ImageView
-    lateinit var tvState: TextView
-    lateinit var tvName : TextView
-    lateinit var progressBar: ProgressBar
-    lateinit var btnPlay : Button
     lateinit var adapter : BaseAdapter
     private var listSongLocal = mutableListOf<Song>()
     var itemClick: FragmentAction? = null
@@ -63,32 +68,34 @@ class BaseFragment() :
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_base, container, false)
+        _binding = FragmentBaseBinding.inflate(inflater,container,false)
+        val view = binding.root
         adapter = BaseAdapter(requireActivity())
         initRv(view)
         setData()
         return view
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
+    }
     private fun initRv(view: View) {
-        tvState = view.findViewById(R.id.tv_state)
-        progressBar = view.findViewById(R.id.progress_circular)
-        tvName = view.findViewById(R.id.tv_recommed)
-        btnPlay = view.findViewById(R.id.play_playlist)
-        btnPlay.isClickable = false
-        btnPlay.setOnClickListener {
+        binding.playPlaylist.isClickable = false
+        binding.playPlaylist.setOnClickListener {
          if(listSongLocal.isNotEmpty()){
              itemClick?.setNewPlaylistOnFragment(listSongLocal,"OFFLINE")
             } else showSnack("Local song blank")
         }
-        tvName.text = "Local Playlist"
-        close = view.findViewById(R.id.close)
-        close.setOnClickListener {
-            super.requireActivity().onBackPressed()
+        binding.tvRecommed .text = "Local Playlist"
+        binding.close.setOnClickListener {
+            val navHostFragment =
+                requireActivity().supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
+            val controller = navHostFragment.navController
+            controller.popBackStack()
         }
-        rvrecommnend = view.findViewById(R.id.rv_recommed)
-        rvrecommnend.adapter = adapter
-        rvrecommnend.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+        binding.rvRecommed.adapter = adapter
+        binding.rvRecommed.layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         adapter.setItemClick {
             clickItem(it)
         }
@@ -154,11 +161,11 @@ class BaseFragment() :
                 cursor.close()
             }
             withContext(Dispatchers.Main) {
-                progressBar.visibility = View.GONE
-                tvState.visibility = View.GONE
+                binding.progressCircular.visibility = View.GONE
+                binding.tvState.visibility = View.GONE
                 adapter.setData(listSongLocal)
                 if (listSongLocal.isNotEmpty()){
-                    btnPlay.isClickable = true
+                    binding.playPlaylist.isClickable = true
                 }
             }
         }

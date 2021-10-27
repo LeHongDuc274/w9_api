@@ -11,13 +11,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.data.local.models.SongFavourite
 import com.example.myapplication.data.remote.responses.Song
+import com.example.myapplication.databinding.ItemSongBinding
 import com.example.myapplication.utils.Contains
 
 class BaseAdapter(val context: Context) :
     RecyclerView.Adapter<BaseAdapter.ViewHolder>() {
     private var itemClick: ((Song) -> Unit)? = null
     private var listSongs = listOf<Song>()
-    private var listFavourite = listOf<SongFavourite>()
 
     inner class ViewHolder(itemVIew: View) : RecyclerView.ViewHolder(itemVIew) {
     }
@@ -27,7 +27,6 @@ class BaseAdapter(val context: Context) :
             LayoutInflater.from(parent.context).inflate(R.layout.item_song, parent, false)
         )
     }
-
 
     override fun onBindViewHolder(holder: BaseAdapter.ViewHolder, position: Int) {
         val tvTitle = holder.itemView.findViewById<TextView>(R.id.tv_title)
@@ -65,5 +64,4 @@ class BaseAdapter(val context: Context) :
     fun setItemClick(action: (Song) -> Unit) {
         itemClick = action
     }
-
 }

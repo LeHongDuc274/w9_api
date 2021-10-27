@@ -27,6 +27,7 @@ import com.example.myapplication.adapter.SongAdapter
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.responses.TopSongResponse
+import com.example.myapplication.databinding.FragmentHomeBinding
 import com.example.myapplication.service.MusicService
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
@@ -41,13 +42,14 @@ class HomeFragment : Fragment() {
 
     private var listSong = mutableListOf<Song>()
     lateinit var adapter: SongAdapter
-    lateinit var rv: RecyclerView
-    lateinit var close: ImageView
-    lateinit var tvState: TextView
-    lateinit var btnPlay: Button
-    lateinit var progressBar: ProgressBar
-    lateinit var tvName: TextView
-
+//    lateinit var rv: RecyclerView
+//    lateinit var close: ImageView
+//    lateinit var tvState: TextView
+//    lateinit var btnPlay: Button
+//    lateinit var progressBar: ProgressBar
+//    lateinit var tvName: TextView
+    private var _binding : FragmentHomeBinding ? = null
+    private val binding get() = _binding!!
     val broadcastInternet = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
 
@@ -75,37 +77,35 @@ class HomeFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
         requireActivity().unregisterReceiver(broadcastInternet)
+        _binding = null
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_home, container, false)
+    ): View {
+        _binding = FragmentHomeBinding.inflate(inflater,container,false)
+        val view = binding.root
         adapter = SongAdapter(requireActivity())
-        initView(view)
+        initView()
         initRv(view)
+        getTopSong()
         return view
     }
 
-    private fun initView(view: View) {
-        tvState = view.findViewById(R.id.tv_state)
-        progressBar = view.findViewById(R.id.progress_circular)
-        tvName = view.findViewById(R.id.tv_recommed)
-        tvName.isSelected = true
+    private fun initView() {
+        binding.tvRecommed.isSelected = true
     }
 
     private fun initRv(view: View) {
-        rv = view.findViewById<RecyclerView>(R.id.rv_recommed)
-        rv.adapter = adapter
-        rv.layoutManager =
+        binding.rvRecommed.adapter = adapter
+        binding.rvRecommed.layoutManager =
             LinearLayoutManager(
                 requireActivity().applicationContext,
                 LinearLayoutManager.VERTICAL,
                 false
             )
-        btnPlay = view.findViewById(R.id.play_playlist)
-        btnPlay.setOnClickListener {
+        binding.playPlaylist.setOnClickListener {
             if (listSong.isNotEmpty()) {
                 itemCLick?.setNewPlaylistOnFragment(listSong)
             } else showSnack("List empty")
@@ -116,25 +116,40 @@ class HomeFragment : Fragment() {
         adapter.setDownloadClick { song -> itemCLick?.clickDownload(song) }
     }
 
-    fun receiverStateLoad(state: Int, data: MutableList<Song>?, mess: String?) {
-        when (state) {
-            1 -> {// loading
-                tvState.visibility = View.VISIBLE
-                progressBar.visibility = View.VISIBLE
-                tvState.text = mess
-            }
-            2 -> {  //succes
-                tvState.visibility = View.GONE
-                progressBar.visibility = View.GONE
-                data?.let {
-                    listSong = it
-                    Log.e("tag",it.toString())
-                    adapter.setData(it)
+    fun getTopSong() {
+        val songApi = SongApi.create()
+        var response: TopSongResponse? = null
+        binding.tvState.visibility = View.VISIBLE
+        binding.progressCircular.visibility = View.VISIBLE
+        binding.tvState.text = "Loading"
+        if (Contains.checkNetWorkAvailable(requireActivity())) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    withTimeout(3000) {
+                        try {
+                            response = songApi.getTopSong()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                        withContext(Dispatchers.Main) {
+                            response?.let {
+                                listSong = it.data.song.toMutableList()
+                                if (!listSong.isEmpty()) {
+                                    adapter.setData(listSong)
+                                } else {
+                                    showSnack("List empty")
+                                }
+                            }
+                            binding.tvState.visibility = View.GONE
+                            binding.progressCircular.visibility = View.GONE
+                        }
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    showSnack("Time Out")
                 }
             }
-            3 -> {
-                showSnack(mess ?: "error")
-            }
+        } else {
+            showSnack("No internet")
         }
     }
 
