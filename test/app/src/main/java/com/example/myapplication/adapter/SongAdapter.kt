@@ -68,7 +68,6 @@ class SongAdapter(val context: Context) :
     fun setItemClick(action: (Song) -> Unit) {
         itemClick = action
     }
-
     fun setFavouriteClick(action: (Song) -> Unit) {
         favouriteClick = action
     }

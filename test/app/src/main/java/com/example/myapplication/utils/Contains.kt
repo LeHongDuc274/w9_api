@@ -1,9 +1,12 @@
 package com.example.myapplication.utils
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
+import androidx.core.app.ActivityCompat
 
 object Contains {
     const val ACTION_PAUSE = 1
@@ -12,10 +15,6 @@ object Contains {
     const val ACTION_PREV = 4
     const val ACTION_NEXT = 5
     const val ACTION_CANCEL = 6
-    const val TYPE_ONLINE = 3
-    const val TYPE_FOVOURITE = 4
-    const val TYPE_OFLINE = 5
-    const val TYPE_RECOMMEND = 6
     const val FROM_NOTIFY = "fromNotify"
     const val BASE_URL = "http://mp3.zing.vn"
     const val BASE_SEARCH_URL = "http://ac.mp3.zing.vn/"
@@ -43,5 +42,4 @@ object Contains {
             return networkInfo != null && networkInfo.isConnected
         }
     }
-
 }

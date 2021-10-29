@@ -1,42 +1,19 @@
 package com.example.myapplication.fragmment
 
-import android.Manifest
-import android.app.DownloadManager
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
-import androidx.core.app.ActivityCompat
-import androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
 import com.example.myapplication.adapter.SongAdapter
-import com.example.myapplication.data.remote.SongApi
-import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
-import com.example.myapplication.data.remote.search.SearchResponse
 import com.example.myapplication.databinding.FragmentRecommendBinding
-import com.example.myapplication.service.MusicService
-import com.example.myapplication.utils.Contains
-import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
-import com.example.myapplication.utils.Contains.TYPE_RECOMMEND
 import com.example.myapplication.utils.FragmentAction
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.io.File
 
 class RecommendFragment(
 ) : Fragment() {

@@ -71,38 +71,41 @@ class MusicService : Service(){
 
     fun isPlaying() = mediaPlayer.isPlaying
     fun setPlaylist(list: List<Song>, name: String = "ONLINE") {
-        playlist = list
         namePlaylist = name
+        playlist = list
     }
 
     fun isPlaylistEmpty() = if (playlist.isEmpty()) true else false
 
     fun setNewSong(newId: String) {
-        if (namePlaylist != "OFFLINE") {
-            cursong = playlist.find {
-                it.id == newId
-            } ?: cursong
-            songPos = playlist.indexOf(cursong)
-            mediaPlayer.stop()
-            val uri = Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
-            if(internetConnected) mediaPlayer = MediaPlayer.create(applicationContext, uri)
+       if(newId!=cursong?.id) {
+            if (namePlaylist != "OFFLINE") {
+                cursong = playlist.find {
+                    it.id == newId
+                } ?: cursong
+                songPos = playlist.indexOf(cursong)
+                mediaPlayer.stop()
+                val uri =
+                    Uri.parse("http://api.mp3.zing.vn/api/streaming/audio/${cursong!!.id}/128")
+                if (internetConnected) mediaPlayer = MediaPlayer.create(applicationContext, uri)
                 else mediaPlayer.reset()
-            mediaPlayer.setOnCompletionListener {
-                nextSong()
-            }
-        } else {
-            cursong = playlist.find {
-                it.id == newId
-            } ?: cursong
-            songPos = playlist.indexOf(cursong)
-            mediaPlayer.stop()
-            val uri = ContentUris.withAppendedId(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                cursong!!.id.toLong()
-            )
-            mediaPlayer = MediaPlayer.create(applicationContext, uri)
-            mediaPlayer.setOnCompletionListener {
-                nextSong()
+                mediaPlayer.setOnCompletionListener {
+                    nextSong()
+                }
+            } else {
+                cursong = playlist.find {
+                    it.id == newId
+                } ?: cursong
+                songPos = playlist.indexOf(cursong)
+                mediaPlayer.stop()
+                val uri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    cursong!!.id.toLong()
+                )
+                mediaPlayer = MediaPlayer.create(applicationContext, uri)
+                mediaPlayer.setOnCompletionListener {
+                    nextSong()
+                }
             }
         }
     }
@@ -111,11 +114,11 @@ class MusicService : Service(){
     fun playSong() {
        try {
            mediaPlayer.start()
+           sendToActivity(ACTION_PAUSE)
        } catch (e:IllegalStateException){
            e.printStackTrace()
        }
     }
-
 
     fun setRepeat() {
         repeat = !repeat

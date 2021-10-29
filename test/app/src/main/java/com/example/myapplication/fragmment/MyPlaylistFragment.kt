@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,6 +26,7 @@ import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.databinding.FragmentMyPlaylistBinding
 import com.example.myapplication.service.MusicService
+import com.example.myapplication.viewmodels.MainViewModel
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.*
 
@@ -37,6 +39,9 @@ class MyPlaylistFragment(
     val adapter = PlaylistAdapter()
     lateinit var db: SongDao
     var song: Song? = null
+    lateinit var vm: MainViewModel
+
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -45,7 +50,8 @@ class MyPlaylistFragment(
         song = arguments?.getSerializable("song") as Song?
         _binding = FragmentMyPlaylistBinding.inflate(inflater,container,false)
         val view = binding.root
-        db = SongDatabase.getInstance(requireContext().applicationContext).getDao()
+        vm = ViewModelProvider(requireActivity(),
+            MainViewModel.MainViewmodelFactory(requireActivity().application))[MainViewModel::class.java]
         initViews()
         getlistPlaylist()
         return view
@@ -57,18 +63,16 @@ class MyPlaylistFragment(
     }
 
     private fun getlistPlaylist() {
-        CoroutineScope(Dispatchers.IO).launch {
-            listPlaylist = db.getAllPlaylist()
-            withContext(Dispatchers.Main) {
-                adapter.setData(listPlaylist)
-            }
-        }
+        vm.getPlaylists()
+        vm.playlists.observe(viewLifecycleOwner,{
+            adapter.setData(it.toMutableList())
+        })
     }
 
     private fun initViews() {
         adapter.setData(listPlaylist)
         adapter.setOnClickItem {
-            itemClick(it)
+           // itemClick(it)
         }
         binding.rvPlaylist.adapter = adapter
         binding.rvPlaylist.layoutManager = LinearLayoutManager(
@@ -77,7 +81,7 @@ class MyPlaylistFragment(
             false
         )
         binding.create.setOnClickListener {
-            createNewPlaylist()
+          //  createNewPlaylist()
         }
         binding.close.setOnClickListener {
             super.requireActivity().onBackPressed()
@@ -102,7 +106,6 @@ class MyPlaylistFragment(
     }
 
     private fun addSongtoPlaylist(playlist: Playlist) {
-
         if (!song!!.isOffline) {
             val crossRef = SongPlaylistCrossRef(playlist.playlistName, song!!.id)
             val songInPlaylist = SongInPlaylist(

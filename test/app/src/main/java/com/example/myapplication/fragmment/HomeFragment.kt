@@ -17,55 +17,23 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
-import androidx.core.app.ActivityCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.myapplication.R
-import com.example.myapplication.activities.PlayingActivity
 import com.example.myapplication.adapter.SongAdapter
-import com.example.myapplication.data.remote.SongApi
-import com.example.myapplication.data.remote.responses.Song
-import com.example.myapplication.data.remote.responses.TopSongResponse
 import com.example.myapplication.databinding.FragmentHomeBinding
-import com.example.myapplication.service.MusicService
-import com.example.myapplication.utils.Contains
-import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
-import com.example.myapplication.utils.Contains.ACTION_PAUSE
-import com.example.myapplication.utils.FragmentAction
+import com.example.myapplication.viewmodels.MainViewModel
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.*
-import okhttp3.Cache
-import java.io.File
 
 class HomeFragment : Fragment() {
-
-    private var listSong = mutableListOf<Song>()
+    lateinit var vm: MainViewModel
     lateinit var adapter: SongAdapter
-//    lateinit var rv: RecyclerView
-//    lateinit var close: ImageView
-//    lateinit var tvState: TextView
-//    lateinit var btnPlay: Button
-//    lateinit var progressBar: ProgressBar
-//    lateinit var tvName: TextView
-    private var _binding : FragmentHomeBinding ? = null
+    private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     val broadcastInternet = object : BroadcastReceiver() {
         override fun onReceive(p0: Context?, p1: Intent?) {
 
         }
-    }
-    var itemCLick: FragmentAction? = null
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is FragmentAction) {
-            itemCLick = context
-        }
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        itemCLick = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,12 +52,28 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentHomeBinding.inflate(inflater,container,false)
+        _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val view = binding.root
         adapter = SongAdapter(requireActivity())
         initView()
-        initRv(view)
-        getTopSong()
+        initRv()
+        vm = ViewModelProvider(requireActivity(),MainViewModel.MainViewmodelFactory(requireActivity().application))[MainViewModel::class.java]
+        // getTopSong()
+        vm.fetchTopSong()
+        vm.listTopSong.observe(viewLifecycleOwner, {
+            adapter.setData(it.toMutableList())
+        })
+        vm.progressBar.observe(viewLifecycleOwner, {
+            if (it) {
+                binding.progressCircular.visibility = View.VISIBLE
+                binding.tvState.visibility = View.VISIBLE
+            }
+            else {
+                binding.progressCircular.visibility = View.GONE
+                binding.tvState.visibility = View.GONE
+
+            }
+        })
         return view
     }
 
@@ -97,7 +81,7 @@ class HomeFragment : Fragment() {
         binding.tvRecommed.isSelected = true
     }
 
-    private fun initRv(view: View) {
+    private fun initRv() {
         binding.rvRecommed.adapter = adapter
         binding.rvRecommed.layoutManager =
             LinearLayoutManager(
@@ -106,51 +90,17 @@ class HomeFragment : Fragment() {
                 false
             )
         binding.playPlaylist.setOnClickListener {
-            if (listSong.isNotEmpty()) {
-                itemCLick?.setNewPlaylistOnFragment(listSong)
+            if (vm.listTopSong.value!!.isNotEmpty()) {
+                vm.setNewPlaylist(vm.listTopSong.value!!,"ONLINE")
             } else showSnack("List empty")
         }
         adapter.setItemClick { song ->
-            itemCLick?.setNewSongOnFragment(song, listSong)
-        }
-        adapter.setDownloadClick { song -> itemCLick?.clickDownload(song) }
-    }
-
-    fun getTopSong() {
-        val songApi = SongApi.create()
-        var response: TopSongResponse? = null
-        binding.tvState.visibility = View.VISIBLE
-        binding.progressCircular.visibility = View.VISIBLE
-        binding.tvState.text = "Loading"
-        if (Contains.checkNetWorkAvailable(requireActivity())) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    withTimeout(3000) {
-                        try {
-                            response = songApi.getTopSong()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                        withContext(Dispatchers.Main) {
-                            response?.let {
-                                listSong = it.data.song.toMutableList()
-                                if (!listSong.isEmpty()) {
-                                    adapter.setData(listSong)
-                                } else {
-                                    showSnack("List empty")
-                                }
-                            }
-                            binding.tvState.visibility = View.GONE
-                            binding.progressCircular.visibility = View.GONE
-                        }
-                    }
-                } catch (e: TimeoutCancellationException) {
-                    showSnack("Time Out")
-                }
+            if(vm.namePlaylist.value != "ONLINE"){
+                vm.setNewPlaylist(vm.listTopSong.value!!,"ONLINE")
             }
-        } else {
-            showSnack("No internet")
+            vm.setNewSong(song)
         }
+       adapter.setDownloadClick { song -> vm.downloadSong(song) }
     }
 
     private fun showSnack(mess: String) {

@@ -1,6 +1,5 @@
 package com.example.myapplication.data.remote.responses
 
-import com.example.myapplication.utils.Contains.TYPE_ONLINE
 import java.io.Serializable
 
 

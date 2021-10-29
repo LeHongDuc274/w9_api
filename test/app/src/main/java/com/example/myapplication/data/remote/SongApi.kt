@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 
 interface SongApi {
     @GET("xhr/chart-realtime")
-    suspend fun getTopSong(): TopSongResponse
+     fun getTopSong(): Call<TopSongResponse>
 
     @GET("xhr/recommend")
     fun getRecommend(
@@ -45,7 +45,7 @@ interface SongApi {
 
     companion object {
 
-        fun create(cache: Cache? = null): SongApi {
+        fun create(): SongApi {
 //            val cacheSize = 10 * 1024 * 1024L
 //            val file = File(MyApp().getInstance().cacheDir,"cache")
 //            val cache = Cache(file,cacheSize)
