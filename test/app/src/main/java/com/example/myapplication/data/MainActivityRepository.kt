@@ -17,6 +17,8 @@ import com.example.myapplication.R
 import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.local.models.Playlist
 import com.example.myapplication.data.remote.SongApi
+import com.example.myapplication.data.remote.info.Infor
+import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.responses.TopSongResponse
 import com.example.myapplication.data.remote.search.SearchResponse
@@ -256,5 +258,62 @@ class MainActivityRepository {
                 }
             }
         }
+    }
+
+     fun getInfoSong(song: Song,callback: NetworkResponseCallback<String>) {
+        val inforApi = SongApi.create()
+        val infor = inforApi.getInfo("audio", song.id).enqueue(
+            object : Callback<Infor> {
+                override fun onResponse(call: Call<Infor>, response: Response<Infor>) {
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        body?.let {
+                            val listGenre = body.data.genres
+                            if (listGenre.isNotEmpty()) {
+                                var text = ""
+                                listGenre.forEach {
+                                    text = text + " " + it.name
+                                }
+                                callback.onNetworkSuccess(listOf(text))
+                            }
+                        }
+                    }
+                }
+
+                override fun onFailure(call: Call<Infor>, t: Throwable) {
+                    callback.onNetworkFailure("UNKNOWN")
+                }
+            }
+        )
+    }
+    fun isFavouriteSong(context: Context,song: Song,callback: NetworkResponseCallback<Boolean>){
+        val db = SongDatabase.getInstance(context)
+        CoroutineScope(Dispatchers.IO).launch {
+            val isExists = db.getDao().isExist(song.id)
+            withContext(Dispatchers.Main) {
+               callback.onNetworkSuccess(listOf(isExists))
+            }
+        }
+    }
+    fun getRecommendSong(song: Song,callback: NetworkResponseCallback<Song>) {
+        val songId = song.id
+        val recommendResponses = SongApi.create().getRecommend("audio", songId)
+        recommendResponses.enqueue(object : Callback<RecommendResponses> {
+            override fun onResponse(
+                call: Call<RecommendResponses>,
+                response: Response<RecommendResponses>
+            ) {
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    body?.let {
+                        val newlist = it.data.items.toMutableList()
+                        callback.onNetworkSuccess(newlist)
+                    }
+                }
+            }
+            override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
+                callback.onNetworkFailure("error call api")
+            }
+        })
     }
 }

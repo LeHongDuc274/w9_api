@@ -25,6 +25,7 @@ import com.example.myapplication.activities.PlayingActivity
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.receiver.NotifyReceiver
 import com.example.myapplication.utils.Contains.ACTION_CANCEL
+import com.example.myapplication.utils.Contains.ACTION_CHANGE_PLAYLIST
 import com.example.myapplication.utils.Contains.ACTION_CHANGE_SONG
 import com.example.myapplication.utils.Contains.ACTION_NEXT
 import com.example.myapplication.utils.Contains.ACTION_PAUSE
@@ -37,7 +38,7 @@ import java.io.Serializable
 import java.lang.IllegalStateException
 import kotlin.random.Random
 
-class MusicService : Service(){
+class MusicService : Service() {
     private var mediaPlayer = MediaPlayer()
 
     private var playlist = listOf<Song>()
@@ -75,14 +76,30 @@ class MusicService : Service(){
         playlist = list
     }
 
+    fun getPlaylist() = playlist
     fun isPlaylistEmpty() = if (playlist.isEmpty()) true else false
+    fun playOneSong(song: Song) {
+        // dang dinh dat lai cursong o day
+        cursong = song
+        mediaPlayer.stop()
+        val uri = ContentUris.withAppendedId(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            cursong!!.id.toLong()
+        )
+        mediaPlayer = MediaPlayer.create(applicationContext, uri)
 
-    fun setNewSong(newId: String) {
-       if(newId!=cursong?.id) {
+        mediaPlayer.setOnCompletionListener {
+            nextSong()
+        }
+       // sendToActivity(ACTION_CHANGE_SONG)
+    }
+
+    fun setNewSong(song:Song) {
+        if (song.id != cursong?.id) {
             if (namePlaylist != "OFFLINE") {
                 cursong = playlist.find {
-                    it.id == newId
-                } ?: cursong
+                    it.id == song.id
+                } ?: song
                 songPos = playlist.indexOf(cursong)
                 mediaPlayer.stop()
                 val uri =
@@ -94,8 +111,8 @@ class MusicService : Service(){
                 }
             } else {
                 cursong = playlist.find {
-                    it.id == newId
-                } ?: cursong
+                    it.id == song.id
+                } ?: song
                 songPos = playlist.indexOf(cursong)
                 mediaPlayer.stop()
                 val uri = ContentUris.withAppendedId(
@@ -112,12 +129,12 @@ class MusicService : Service(){
 
 
     fun playSong() {
-       try {
-           mediaPlayer.start()
-           sendToActivity(ACTION_PAUSE)
-       } catch (e:IllegalStateException){
-           e.printStackTrace()
-       }
+        try {
+            mediaPlayer.start()
+            sendToActivity(ACTION_PAUSE)
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+        }
     }
 
     fun setRepeat() {
@@ -139,13 +156,13 @@ class MusicService : Service(){
         if (!repeat && !shuffle) { // repeat disable _>next
             if (songPos < playlist.size - 1) {
                 songPos++
-                val newId = playlist[songPos].id
-                setNewSong(newId)
+                val newSong = playlist[songPos]
+                setNewSong(newSong)
                 playSong()
             }
         } else if (!repeat && shuffle) { // next random
             val random = Random.nextInt(songPos, playlist.size)
-            setNewSong(playlist[random].id)
+            setNewSong(playlist[random])
             playSong()
         } else { // repeat enable -> seek to start
             mediaPlayer.seekTo(0)
@@ -162,8 +179,8 @@ class MusicService : Service(){
             return
         } else if (songPos > 0) {
             songPos--
-            val newId = playlist[songPos].id
-            setNewSong(newId)
+            val newSong = playlist[songPos]
+            setNewSong(newSong)
             playSong()
         }
         sendToActivity(ACTION_CHANGE_SONG)

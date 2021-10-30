@@ -23,7 +23,6 @@ class MainViewModel(private val app: Application) : ViewModel() {
     private var _listTopSong = MutableLiveData<List<Song>>().apply { value = emptyList() }
     val listTopSong: LiveData<List<Song>> = _listTopSong
 
-
     private var _listSearch = MutableLiveData<List<Song>>().apply { value = emptyList() }
     val listSearch: LiveData<List<Song>> = _listSearch
 
@@ -50,6 +49,7 @@ class MainViewModel(private val app: Application) : ViewModel() {
 
     private var _isPlaying = MutableLiveData<Boolean>(false)
     val isPlaying: LiveData<Boolean> = _isPlaying
+
 
     fun fetchTopSong() {
         _progressBar.value = true
@@ -111,7 +111,6 @@ class MainViewModel(private val app: Application) : ViewModel() {
         _curlist.value = list
         _curlist.value?.get(0)?.let { setNewSong(it) }
     }
-
     fun setNewSong(song: Song) {
         _curSong.value = song
     }

@@ -58,7 +58,7 @@ class FavouriteViewModel(private val app: Application) : ViewModel() {
                 @Suppress("UNCHECKED_CAST")
                 return FavouriteViewModel(app) as T
             }
-            throw IllegalArgumentException("Unable construct")
+            throw IllegalArgumentException("Unable construct viewmodel")
         }
     }
 }

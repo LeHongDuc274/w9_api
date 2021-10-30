@@ -26,11 +26,13 @@ import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.myapplication.databinding.ActivityMainBinding
 import com.example.myapplication.fragmment.*
+import com.example.myapplication.utils.Contains.ACTION_CHANGE_PLAYLIST
 import com.example.myapplication.utils.Contains.checkNetWorkAvailable
 import com.example.myapplication.viewmodels.MainViewModel
 import com.google.android.material.snackbar.Snackbar
@@ -216,9 +218,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        musicService?.let{
+            vm.setNewSong(it.getCurSong()!!)
+            Log.e("song resum",it.getCurSong()!!.title)
+        }
+    }
     private fun observeCurSong() {
         vm.curSong.observe(this, {
-            musicService?.setNewSong(it.id)
+            Log.e("curSong",it.title)
+            musicService?.setNewSong(it)
             if(vm.isPlaying.value == true) musicService?.playSong()
             val intent = Intent(this, MusicService::class.java)
             startService(intent)

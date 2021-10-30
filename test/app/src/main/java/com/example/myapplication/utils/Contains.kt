@@ -15,6 +15,7 @@ object Contains {
     const val ACTION_PREV = 4
     const val ACTION_NEXT = 5
     const val ACTION_CANCEL = 6
+    const val ACTION_CHANGE_PLAYLIST = 7
     const val FROM_NOTIFY = "fromNotify"
     const val BASE_URL = "http://mp3.zing.vn"
     const val BASE_SEARCH_URL = "http://ac.mp3.zing.vn/"
