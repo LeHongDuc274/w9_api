@@ -26,10 +26,11 @@
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/drawable/outline_sim_card_download_checked.xml" value="0.14635416666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/activity_main.xml" value="0.25416666666666665" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/activity_playing.xml" value="0.24010416666666667" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_add_song_to_playlist.xml" value="0.17604166666666668" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_base.xml" value="0.4" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_favourite.xml" value="0.19322916666666667" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_home.xml" value="0.24010416666666667" />
-        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_my_playlist.xml" value="0.536" />
+        <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_my_playlist.xml" value="0.4023809523809524" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_recommend.xml" value="0.176" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/fragment_search.xml" value="0.12760416666666666" />
         <entry key="..\:/Trainning/onlineMusic/w9_api/test/app/src/main/res/layout/item_playlist.xml" value="0.19375" />

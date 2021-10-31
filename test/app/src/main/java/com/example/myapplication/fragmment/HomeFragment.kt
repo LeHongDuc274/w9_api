@@ -99,6 +99,7 @@ class HomeFragment : Fragment() {
                 vm.setNewPlaylist(vm.listTopSong.value!!,"ONLINE")
             }
             vm.setNewSong(song)
+            vm.playSong()
         }
        adapter.setDownloadClick { song -> vm.downloadSong(song) }
     }

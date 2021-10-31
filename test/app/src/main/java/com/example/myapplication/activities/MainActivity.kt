@@ -40,39 +40,12 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
-    private var musicService: MusicService? = null
-    private var isBound = false
     var searchApi: SongApi
     private lateinit var binding: ActivityMainBinding
     private lateinit var vm: MainViewModel
 
     init {
         searchApi = SongApi.createSearch()
-    }
-    val broadcast = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            p1?.let {
-                if (it.action == "fromNotifyToActivity") {
-                    val value = it.getIntExtra("fromNotifyToActivity", -1)
-                    when (value) {
-                        ACTION_CHANGE_SONG -> {
-                            musicService?.cursong?.let { it1 -> vm.setNewSong(it1) }
-                            musicService?.isPlaying()?.let { it1 -> vm.setPlaybackState(it1) }
-                        }
-                        else -> musicService?.isPlaying()?.let { it1 -> vm.setPlaybackState(it1) }
-                    }
-                }
-            }
-        }
-    }
-    val broadcastInternet = object : BroadcastReceiver() {
-        override fun onReceive(p0: Context?, p1: Intent?) {
-            p1?.let {
-                if (it.action == ConnectivityManager.CONNECTIVITY_ACTION) {
-                    musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
-                }
-            }
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,98 +61,58 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         setupNav()
         initViews()
-        observePlaylist()
-        bindService()
-        registerReceiver()
-        vm.message.observe(this,{
+        vm.message.observe(this, {
             showSnack(it)
         })
     }
-    private fun registerReceiver() {
-        val filter = IntentFilter("fromNotifyToActivity")
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            broadcast,
-            filter
-        )
-        val filter2 = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        registerReceiver(broadcastInternet, filter2)
+//    private fun registerReceiver() {
+
+//    }
+
+    override fun onRestart() {
+        super.onRestart()
+        if (vm.curSong.value != null) vm.getCursong()
+
     }
 
-    private fun unregisterReceiver() {
-       LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcast)
-        unregisterReceiver(broadcastInternet)
-    }
     private fun setupNav() {
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
         val controller = navHostFragment.navController
         binding.bottomNavigationView.setupWithNavController(controller)
     }
+
     private fun initViews() {
         binding.tvInfor.isSelected = true
         isStoragePermissionGranted()
         initControlBottomBar()
         initControlSearchView()
-    }
-    private fun observePlaylist() {
-        vm.curList.observe(this, {
-            if (!it.isNullOrEmpty()) {
-                musicService?.setPlaylist(it, vm.namePlaylist.value!!)
-            }
-        })
+        observePlaybackState()
+        observeCurSong()
     }
 
     private fun initControlSearchView() {
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener,
             androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(p0: String?): Boolean {
-                musicService?.let {
-                    val navHostFragment =
-                        supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
-                    val controller = navHostFragment.navController
-                    controller.navigate(R.id.searchFragment)
-                    binding.searchView.clearFocus()
-                    if (p0 != null) {
-                        vm.getSearchResult(p0)
-                    }
+                val navHostFragment =
+                    supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
+                val controller = navHostFragment.navController
+                controller.navigate(R.id.searchFragment)
+                binding.searchView.clearFocus()
+                if (p0 != null) {
+                    vm.getSearchResult(p0)
                 }
+
                 return true
             }
+
             override fun onQueryTextChange(p0: String?): Boolean {
                 return true
             }
         })
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (isBound) unbindService(connection)
-        unregisterReceiver()
-    }
-
-    private fun bindService() {
-        val intent = Intent(this, MusicService::class.java)
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
-    }
-
-    val connection = object : ServiceConnection {
-        override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-            val binder = p1 as MusicService.Mybind
-            musicService = binder.getInstance()
-            musicService?.internetConnected = checkNetWorkAvailable(this@MainActivity)
-            musicService?.isPlaying()?.let {
-                vm.setPlaybackState(it)
-            }
-            musicService?.cursong?.let { it1 -> vm.setNewSong(it1) }
-            observeCurSong()
-            observePlaybackState()
-            isBound = true
-        }
-
-        override fun onServiceDisconnected(p0: ComponentName?) {
-            isBound = false
-        }
-    }
 
     fun isStoragePermissionGranted(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -208,66 +141,42 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun changeTogglePausePlayUi(value: Int) {
-        if (value == ACTION_PAUSE) binding.btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
-        else binding.btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
-        musicService?.let {
-            if (it.internetConnected == false && it.namePlaylist != "OFFLINE") {
-                showSnack("No Internet")
-            }
-        }
-    }
+//            if (it.internetConnected == false && it.namePlaylist != "OFFLINE") {
+//                showSnack("No Internet")
+//            }
 
-    override fun onResume() {
-        super.onResume()
-        musicService?.let{
-            vm.setNewSong(it.getCurSong()!!)
-            Log.e("song resum",it.getCurSong()!!.title)
-        }
-    }
     private fun observeCurSong() {
-        vm.curSong.observe(this, {
-            Log.e("curSong",it.title)
-            musicService?.setNewSong(it)
-            if(vm.isPlaying.value == true) musicService?.playSong()
+        vm.curSong.observe(this, { song ->
+            if (song.thumbnail != null) { //online
+                val imgUrl = song.thumbnail
+                Glide.with(applicationContext).load(imgUrl).circleCrop().into(binding.imgSong)
+            } else if (song.image.isNotEmpty()) { // offline
+                binding.imgSong.setImageBitmap(
+                    BitmapFactory.decodeByteArray(song.image, 0, song.image.size)
+                )
+            }
+            binding.tvInfor.text = song.title
             val intent = Intent(this, MusicService::class.java)
             startService(intent)
-            binding.tvInfor.text = it.title
-            if (vm.namePlaylist.value != "OFFLINE") {
-                val imgUrl = it.thumbnail
-                Glide.with(this).load(imgUrl).placeholder(R.drawable.ic_baseline_music_note_24)
-                    .centerInside().into(binding.imgSong)
-            } else {
-                val byteArray = it.image
-                byteArray.let { byteArr ->
-                    if (byteArr.isEmpty()) {
-                        binding.imgSong.setImageResource(R.drawable.ic_baseline_music_note_24)
-                    } else {
-                        binding.imgSong.setImageBitmap(
-                            BitmapFactory.decodeByteArray(
-                                byteArr,
-                                0,
-                                byteArr.size
-                            )
-                        )
-                    }
-                }
-            }
         })
     }
+
 
     private fun initControlBottomBar() {
         binding.btnPause.setOnClickListener {
             if (vm.curSong.value != null) {
+                if(!vm.internetState.value!! && !vm.curSong.value!!.isOffline){
+                    showSnack("Offline Mode")
+                }
                 val intent = Intent(this, MusicService::class.java)
                 startService(intent)
-                musicService?.togglePlayPause()
+                vm.togglePlayPause()
             } else {
                 showSnack("Chưa chọn bài hát")
             }
         }
         binding.llLayout.setOnClickListener {
-            if (isBound && vm.curSong.value != null) {
+            if (vm.curSong.value != null) {
                 val intent = Intent(this, PlayingActivity::class.java)
                 startActivity(intent)
             } else {

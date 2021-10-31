@@ -10,19 +10,16 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
-import android.view.View
-import androidx.lifecycle.MutableLiveData
-import com.example.myapplication.R
 import com.example.myapplication.data.local.SongDatabase
 import com.example.myapplication.data.local.models.Playlist
+import com.example.myapplication.data.local.models.SongInPlaylist
+import com.example.myapplication.data.local.relations.SongPlaylistCrossRef
 import com.example.myapplication.data.remote.SongApi
 import com.example.myapplication.data.remote.info.Infor
 import com.example.myapplication.data.remote.recommend.RecommendResponses
 import com.example.myapplication.data.remote.responses.Song
 import com.example.myapplication.data.remote.responses.TopSongResponse
 import com.example.myapplication.data.remote.search.SearchResponse
-import com.example.myapplication.fragmment.RecommendFragment
 import com.example.myapplication.utils.Contains
 import com.example.myapplication.utils.NetworkResponseCallback
 import kotlinx.coroutines.CoroutineScope
@@ -196,7 +193,6 @@ class MainActivityRepository {
 
     fun getlistPlaylist(context: Context, callback: NetworkResponseCallback<Playlist>) {
         val db = SongDatabase.getInstance(context.applicationContext).getDao()
-
         CoroutineScope(Dispatchers.IO).launch {
             val listPlaylist = db.getAllPlaylist()
             withContext(Dispatchers.Main) {
@@ -246,7 +242,7 @@ class MainActivityRepository {
         }
     }
 
-    fun removeFavourite(context: Context,song: Song,callback: NetworkResponseCallback<Song>) {
+    fun removeFavourite(context: Context, song: Song, callback: NetworkResponseCallback<Song>) {
         val db = SongDatabase.getInstance(context.applicationContext)
         CoroutineScope(Dispatchers.IO).launch {
             val id = song.id
@@ -260,7 +256,7 @@ class MainActivityRepository {
         }
     }
 
-     fun getInfoSong(song: Song,callback: NetworkResponseCallback<String>) {
+    fun getInfoSong(song: Song, callback: NetworkResponseCallback<String>) {
         val inforApi = SongApi.create()
         val infor = inforApi.getInfo("audio", song.id).enqueue(
             object : Callback<Infor> {
@@ -286,16 +282,18 @@ class MainActivityRepository {
             }
         )
     }
-    fun isFavouriteSong(context: Context,song: Song,callback: NetworkResponseCallback<Boolean>){
+
+    fun isFavouriteSong(context: Context, song: Song, callback: NetworkResponseCallback<Boolean>) {
         val db = SongDatabase.getInstance(context)
         CoroutineScope(Dispatchers.IO).launch {
             val isExists = db.getDao().isExist(song.id)
             withContext(Dispatchers.Main) {
-               callback.onNetworkSuccess(listOf(isExists))
+                callback.onNetworkSuccess(listOf(isExists))
             }
         }
     }
-    fun getRecommendSong(song: Song,callback: NetworkResponseCallback<Song>) {
+
+    fun getRecommendSong(song: Song, callback: NetworkResponseCallback<Song>) {
         val songId = song.id
         val recommendResponses = SongApi.create().getRecommend("audio", songId)
         recommendResponses.enqueue(object : Callback<RecommendResponses> {
@@ -311,9 +309,107 @@ class MainActivityRepository {
                     }
                 }
             }
+
             override fun onFailure(call: Call<RecommendResponses>, t: Throwable) {
                 callback.onNetworkFailure("error call api")
             }
         })
+    }
+
+    fun createNewPlaylist(
+        context: Context,
+        str: String,
+        callback: NetworkResponseCallback<Playlist>
+    ) {
+        val db = SongDatabase.getInstance(context)
+        if (str.isNotEmpty()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val isPlaylistExist = db.getDao().isPlaylistExits(str)
+                if (!isPlaylistExist) {
+                    db.getDao().insertNewPlaylist(Playlist(str))
+                    val list = db.getDao().getAllPlaylist()
+                    withContext(Dispatchers.Main) {
+                        callback.onNetworkSuccess(list)
+                    }
+                } else withContext(Dispatchers.Main) {
+                    callback.onNetworkFailure("Playlist is Existed,change other name")
+                }
+            }
+        } else {
+            callback.onNetworkFailure("Please enter the name")
+        }
+    }
+
+    fun getListSongOnplaylist(
+        context: Context,
+        otherPlaylist: String,
+        callback: NetworkResponseCallback<Song>
+    ) {
+        val db = SongDatabase.getInstance(context.applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            val listSongCrossRef = db.getDao().getSongOfPlaylist(otherPlaylist) //otherPlaylist
+            if (listSongCrossRef != null) {
+                withContext(Dispatchers.Main) {
+                    var newList = listSongCrossRef.songs.map {
+                        Song(
+                            artists_names = it.artists_names,
+                            duration = it.duration,
+                            title = it.title,
+                            id = it.id,
+                            thumbnail = it.thumbnail,
+                            favorit = true
+                        )
+                    }
+                    callback.onNetworkSuccess(newList)
+                }
+            }
+        }
+    }
+
+    fun addSongtoPlaylist(
+        playlist: Playlist,
+        song: Song,
+        context: Context,
+        callback: NetworkResponseCallback<Song>
+    ) {
+        val db = SongDatabase.getInstance(context.applicationContext).getDao()
+        if (!song.isOffline) {
+            val crossRef = SongPlaylistCrossRef(playlist.playlistName, song.id)
+            val songInPlaylist = SongInPlaylist(
+                artists_names = song.artists_names,
+                duration = song.duration,
+                id = song.id,
+                thumbnail = song.thumbnail,
+                title = song.title
+            )
+            CoroutineScope(Dispatchers.IO).launch {
+                db.insertSongPlaylistCrossRef(crossRef)
+                db.insertSongInPlaylist(songInPlaylist)
+                withContext(Dispatchers.Main) {
+                    callback.onNetworkSuccess(listOf(song))
+                }
+            }
+        } else {
+            callback.onNetworkFailure("Can't add offline music to this playlist")
+        }
+    }
+
+    fun removeSongInplaylist(
+        it: Song,
+        playlistName: String,
+        context: Context,
+        callback: NetworkResponseCallback<Song>
+    ) {
+        val db = SongDatabase.getInstance(context.applicationContext)
+        CoroutineScope(Dispatchers.IO).launch {
+            val id = it.id
+            val isExistCrossRef = db.getDao().isExistCrossRef(id, playlistName)
+            if (isExistCrossRef) {
+                db.getDao().deleteCrossRef(id, playlistName)
+            }
+            withContext(Dispatchers.Main) {
+                callback.onNetworkSuccess(listOf(it))
+            }
+        }
     }
 }

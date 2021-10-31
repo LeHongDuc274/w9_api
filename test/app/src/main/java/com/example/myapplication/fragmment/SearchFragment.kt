@@ -80,8 +80,6 @@ class SearchFragment : Fragment() {
             vm.downloadSong(it)
         }
     }
-
-
     private fun showSnack(mess: String) {
         Snackbar.make(requireActivity().findViewById(R.id.root_layout), mess, Snackbar.LENGTH_SHORT)
             .show()

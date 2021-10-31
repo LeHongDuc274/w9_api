@@ -80,7 +80,7 @@ class BaseFragment() :
 
         binding.playPlaylist.setOnClickListener {
             if (!localVm.lisLocalSong.value.isNullOrEmpty()) {
-                vm.setNewPlaylist(localVm.lisLocalSong.value!!,"OFFLINE")
+                vm.setNewPlaylist(localVm.lisLocalSong.value!!, "OFFLINE")
             } else showSnack("Local song blank")
         }
         adapter.setItemClick {
@@ -89,10 +89,11 @@ class BaseFragment() :
     }
 
     private fun clickItem(song: Song) {
-        if(vm.namePlaylist.value != "OFFLINE"){
-            vm.setNewPlaylist(localVm.lisLocalSong.value!!,"OFFLINE")
+        if (vm.namePlaylist.value != "OFFLINE") {
+            vm.setNewPlaylist(localVm.lisLocalSong.value!!, "OFFLINE")
         }
         vm.setNewSong(song)
+        vm.playSong()
     }
 
     private fun showSnack(mess: String) {

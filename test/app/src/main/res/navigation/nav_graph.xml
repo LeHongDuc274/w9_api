@@ -33,19 +33,19 @@
         app:startDestination="@id/myPlaylistFragment">
         <fragment
             android:id="@+id/myPlaylistFragment"
-            android:name="com.example.myapplication.fragmment.MyPlaylistFragment"
+            android:name="com.example.myapplication.fragmment.PlaylistFragment"
             android:label="fragment_my_playlist"
             tools:layout="@layout/fragment_my_playlist">
             <action
-                android:id="@+id/action_myPlaylistFragment_to_favouriteFragment2"
-                app:destination="@id/favouriteFragment" />
+                android:id="@+id/action_myPlaylistFragment_to_detailPlaylistFragment"
+                app:destination="@id/detailPlaylistFragment" />
         </fragment>
         <fragment
-            android:id="@+id/favouriteFragment"
-            android:name="com.example.myapplication.fragmment.FavouriteFragment"
-            android:label="fragment_favourite"
-            tools:layout="@layout/fragment_favourite" />
-</navigation>
+            android:id="@+id/detailPlaylistFragment"
+            android:name="com.example.myapplication.fragmment.DetailPlaylistFragment"
+            android:label="fragment_detail_playlist"
+            tools:layout="@layout/fragment_detail_playlist" />
+    </navigation>
     <fragment
         android:id="@+id/searchFragment"
         android:name="com.example.myapplication.fragmment.SearchFragment"

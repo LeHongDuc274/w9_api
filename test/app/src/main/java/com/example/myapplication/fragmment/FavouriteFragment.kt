@@ -104,13 +104,12 @@ class FavouriteFragment : Fragment() {
                 vm.setNewPlaylist(favoVm.listFavourite.value!!,"FAVOURITE")
             }
             vm.setNewSong(it)
+            vm.playSong()
         }
         adapter.setDownloadClick {
             vm.downloadSong(it)
         }
         adapter.setFavouriteClick {
-//            if (otherPlaylist == null) removeFavourite(it)
-//            else removeSongInplaylist(it)
             favoVm.removeFavourite(it)
         }
     }

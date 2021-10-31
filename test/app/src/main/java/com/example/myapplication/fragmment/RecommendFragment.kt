@@ -23,7 +23,6 @@ class RecommendFragment(
     private var _binding: FragmentRecommendBinding? = null
     private val binding get() = _binding!!
     lateinit var adapter: SongAdapter
-    private var listSong = mutableListOf<Song>()
     lateinit var recommendVm: RecommendViewModel
     lateinit var playingViewModel: PlayingViewModel
     override fun onCreateView(
@@ -47,19 +46,19 @@ class RecommendFragment(
     }
 
     private fun obverser() {
-        recommendVm.listRecommend.observe(viewLifecycleOwner,{
+        recommendVm.listRecommend.observe(viewLifecycleOwner, {
             adapter.setData(it.toMutableList())
         })
-        recommendVm.progressBar.observe(viewLifecycleOwner,{
+        recommendVm.progressBar.observe(viewLifecycleOwner, {
             if (it) {
                 binding.progressCircular.visibility = View.VISIBLE
                 binding.tvState.visibility = View.VISIBLE
-            } else{
+            } else {
                 binding.progressCircular.visibility = View.GONE
                 binding.tvState.visibility = View.GONE
             }
         })
-        recommendVm.message.observe(viewLifecycleOwner,{
+        recommendVm.message.observe(viewLifecycleOwner, {
             showSnack(it)
         })
     }
@@ -73,12 +72,26 @@ class RecommendFragment(
         binding.rvRecommed.layoutManager =
             LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         recommendVm.getRecommendSong(playingViewModel.curSong.value!!)
-
+        binding.playPlaylist.setOnClickListener {
+            if (!recommendVm.listRecommend.value.isNullOrEmpty()) {
+                playingViewModel.setNewPlaylist(
+                    recommendVm.listRecommend.value!!,
+                    "RECOMMEND ${playingViewModel.curSong.value!!}"
+                )
+            } else showSnack("Local song blank")
+        }
         adapter.setItemClick {
+            if (playingViewModel.namePlaylist.value != "RECOMMEND ${playingViewModel.curSong.value!!}") {
+                playingViewModel.setNewPlaylist(
+                    recommendVm.listRecommend.value!!,
+                    "RECOMMEND ${playingViewModel.curSong.value!!}"
+                )
+            }
             playingViewModel.setNewSong(it)
+            playingViewModel.playSong()
         }
         adapter.setDownloadClick {
-
+            playingViewModel.downloadSong(it)
         }
     }
 
